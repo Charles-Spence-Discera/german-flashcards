@@ -126,6 +126,34 @@ describe.each(implementations)('store: %s', (name, create) => {
     expect(loaded.scheduler.startingEase).toBe(2.5)
   })
 
+  describe('vocab snapshot', () => {
+    it('has nothing before a first successful fetch', async () => {
+      expect(await store.loadVocabSnapshot()).toBeNull()
+    })
+
+    it('round-trips the unparsed vocabulary file', async () => {
+      const raw = { schemaVersion: 1, cards: [{ id: 'a', de: 'a', en: 'a' }] }
+      await store.saveVocabSnapshot(raw)
+      const snapshot = await store.loadVocabSnapshot()
+      expect(snapshot?.raw).toEqual(raw)
+      expect(Number.isNaN(Date.parse(snapshot?.at ?? ''))).toBe(false)
+    })
+
+    it('keeps only the most recent snapshot', async () => {
+      await store.saveVocabSnapshot({ schemaVersion: 1, cards: [] })
+      await store.saveVocabSnapshot({ schemaVersion: 1, cards: [{ id: 'b', de: 'b', en: 'b' }] })
+      const snapshot = await store.loadVocabSnapshot()
+      expect((snapshot?.raw as { cards: unknown[] }).cards).toHaveLength(1)
+    })
+
+    it('stores the file unparsed, so a later build can reinterpret it', async () => {
+      // A shape this build would reject must still be retrievable verbatim.
+      const legacy = [{ id: 'a', de: 'a', en: 'a', bookEx: 'alt' }]
+      await store.saveVocabSnapshot(legacy)
+      expect(await store.loadVocabSnapshot().then((s) => s?.raw)).toEqual(legacy)
+    })
+  })
+
   describe('export', () => {
     it('produces a complete, self-describing backup', async () => {
       await store.putStates([state('a::de-en')])

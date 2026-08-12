@@ -9,6 +9,19 @@ export function Home({ app }: { app: App }) {
 
   return (
     <>
+      {app.offlineSince ? (
+        <div class="notice notice-warn">
+          Offline — gespeicherte Vokabeln vom{' '}
+          {new Date(app.offlineSince).toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          })}
+          . Der Lernfortschritt wird ganz normal gespeichert; neue Karten kommen dazu, sobald du
+          wieder online bist.
+        </div>
+      ) : null}
+
       {!app.durable ? (
         <div class="notice notice-warn">
           Dieses Gerät erlaubt keinen dauerhaften Speicher. Der Fortschritt geht verloren, wenn du

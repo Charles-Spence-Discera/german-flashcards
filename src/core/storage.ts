@@ -20,11 +20,14 @@ import { withDefaults } from './settings'
 import type { ReviewLogEntry, ReviewState } from './types'
 
 const DB_NAME = 'german-flashcards'
-const DB_VERSION = 1
+// v2 added the vocab snapshot store. Upgrades only ever add stores, so existing
+// review history survives untouched.
+const DB_VERSION = 2
 
 const STORE_STATES = 'states'
 const STORE_LOG = 'log'
 const STORE_SETTINGS = 'settings'
+const STORE_VOCAB = 'vocab'
 
 export const BACKUP_KIND = 'german-flashcards-backup'
 export const BACKUP_VERSION = 1
@@ -51,6 +54,14 @@ export interface ImportSummary {
 
 export type ImportMode = 'merge' | 'replace'
 
+/** The last vocabulary file successfully fetched, kept so the app works offline. */
+export interface VocabSnapshot {
+  /** Unparsed JSON exactly as fetched, so a future build's parser can reinterpret it. */
+  raw: unknown
+  /** ISO timestamp of the fetch. */
+  at: string
+}
+
 export interface Store {
   /** True when backed by IndexedDB; false means progress lasts only this session. */
   readonly durable: boolean
@@ -61,6 +72,8 @@ export interface Store {
   loadLog(): Promise<ReviewLogEntry[]>
   loadSettings(): Promise<AppSettings>
   saveSettings(settings: AppSettings): Promise<void>
+  saveVocabSnapshot(raw: unknown): Promise<void>
+  loadVocabSnapshot(): Promise<VocabSnapshot | null>
   exportAll(schedulerId: string): Promise<BackupFile>
   importAll(backup: unknown, mode: ImportMode): Promise<ImportSummary>
   close(): void
@@ -100,6 +113,9 @@ function openDatabase(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
         db.createObjectStore(STORE_SETTINGS, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(STORE_VOCAB)) {
+        db.createObjectStore(STORE_VOCAB, { keyPath: 'id' })
       }
     }
     request.onsuccess = () => resolve(request.result)
@@ -242,6 +258,23 @@ function createIdbStore(db: IDBDatabase): Store {
       await promisifyTransaction(transaction)
     },
 
+    async saveVocabSnapshot(raw) {
+      const transaction = db.transaction(STORE_VOCAB, 'readwrite')
+      transaction.objectStore(STORE_VOCAB).put({ id: 'vocab', raw, at: new Date().toISOString() })
+      await promisifyTransaction(transaction)
+    },
+
+    async loadVocabSnapshot() {
+      const transaction = db.transaction(STORE_VOCAB, 'readonly')
+      const stored = await promisifyRequest<(VocabSnapshot & { id: string }) | undefined>(
+        transaction.objectStore(STORE_VOCAB).get('vocab') as IDBRequest<
+          (VocabSnapshot & { id: string }) | undefined
+        >,
+      )
+      await promisifyTransaction(transaction)
+      return stored ? { raw: stored.raw, at: stored.at } : null
+    },
+
     async exportAll(schedulerId) {
       const [states, log, settings] = await Promise.all([
         store.loadStates(),
@@ -331,6 +364,7 @@ export function createMemoryStore(): Store {
   const states = new Map<string, ReviewState>()
   let log: ReviewLogEntry[] = []
   let settings: AppSettings | null = null
+  let snapshot: VocabSnapshot | null = null
 
   const store: Store = {
     durable: false,
@@ -354,6 +388,12 @@ export function createMemoryStore(): Store {
     },
     async saveSettings(next) {
       settings = next
+    },
+    async saveVocabSnapshot(raw) {
+      snapshot = { raw, at: new Date().toISOString() }
+    },
+    async loadVocabSnapshot() {
+      return snapshot
     },
     async exportAll(schedulerId) {
       return {

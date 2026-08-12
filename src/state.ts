@@ -23,6 +23,8 @@ export interface LoadedState {
   error: string | null
   /** False when IndexedDB was unavailable and progress will not survive the session. */
   durable: boolean
+  /** When the vocabulary could not be fetched, the timestamp of the copy in use. */
+  offlineSince: string | null
   file: VocabFile | null
   /** Issues found in the vocab file, surfaced so bad data is visible rather than silent. */
   problems: Problem[]
@@ -41,6 +43,7 @@ export function useApp() {
     status: 'loading',
     error: null,
     durable: true,
+    offlineSince: null,
     file: null,
     problems: [],
     items: [],
@@ -72,11 +75,34 @@ export function useApp() {
 
       const settings = await store.loadSettings()
 
-      const response = await fetch(VOCAB_URL)
-      if (!response.ok) {
-        throw new Error(`Could not load the vocabulary file (HTTP ${response.status}).`)
+      /*
+       * Fetch first, fall back to the last good copy.
+       *
+       * The service worker's network-first rule covers this too, but only from the
+       * second visit onwards — on a first load the worker has not taken control yet,
+       * so that fetch never reaches it. Installing the app and immediately going
+       * offline would otherwise leave it with no words at all. Keeping our own
+       * snapshot makes offline independent of worker lifecycle, and also survives
+       * GitHub Pages being unreachable.
+       */
+      let raw: unknown
+      let offlineSince: string | null = null
+      try {
+        const response = await fetch(VOCAB_URL)
+        if (!response.ok) {
+          throw new Error(`Could not load the vocabulary file (HTTP ${response.status}).`)
+        }
+        raw = await response.json()
+        // Store the unparsed JSON: a future build may read it differently.
+        void store.saveVocabSnapshot(raw)
+      } catch (fetchError) {
+        const snapshot = await store.loadVocabSnapshot()
+        if (snapshot === null) throw fetchError
+        raw = snapshot.raw
+        offlineSince = snapshot.at
       }
-      const { file, problems } = parseVocabFile(await response.json())
+
+      const { file, problems } = parseVocabFile(raw)
 
       const stored = await store.loadStates()
       const activeScheduler = createSm2Scheduler(settings.scheduler)
@@ -98,6 +124,7 @@ export function useApp() {
         status: 'ready',
         error: null,
         durable: store.durable,
+        offlineSince,
         file,
         problems,
         items: merged.items,
