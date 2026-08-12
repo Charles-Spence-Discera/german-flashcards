@@ -19,7 +19,8 @@
     "skipLibCheck": true,
     "noEmit": true,
 
-    "types": ["vite/client", "vite-plugin-pwa/client"]
+    // "node" is required by scripts/, which runs outside the browser.
+    "types": ["vite/client", "vite-plugin-pwa/client", "node"]
   },
   "include": ["src", "scripts", "vite.config.ts", "vitest.config.ts"]
 }
