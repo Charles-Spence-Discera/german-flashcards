@@ -1,0 +1,539 @@
+/*
+ * Mobile-first. The app is used one-handed on a phone, so anything tappable sits in
+ * the lower half of the screen and is at least 44px tall.
+ */
+
+:root {
+  --bg: #10131a;
+  --surface: #191d27;
+  --surface-raised: #202634;
+  --border: #2a3140;
+  --text: #e8eaf0;
+  --muted: #8b93a7;
+  --accent: #7c9cf5;
+
+  --again: #e2585f;
+  --hard: #d1893c;
+  --good: #45a37a;
+  --easy: #5b8ff5;
+
+  --radius: 14px;
+  --gap: 12px;
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f7fa;
+    --surface: #ffffff;
+    --surface-raised: #ffffff;
+    --border: #dfe3ec;
+    --text: #171a21;
+    --muted: #626b80;
+    --accent: #3b62c4;
+
+    --again: #c9434a;
+    --hard: #b06f22;
+    --good: #2f7f5b;
+    --easy: #3b62c4;
+
+    color-scheme: light;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: contain;
+}
+
+#app {
+  min-height: 100%;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 12px);
+}
+
+/* ---------------------------------------------------------------- header -- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  padding: 14px 0 10px;
+}
+
+.header h1 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.header-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.icon-button {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 10px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  color: var(--text);
+}
+
+.icon-button[aria-current='true'] {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+/* ------------------------------------------------------------------ main -- */
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 8px;
+}
+
+.centered {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  color: var(--muted);
+}
+
+.centered strong {
+  color: var(--text);
+  font-size: 1.15rem;
+}
+
+/* --------------------------------------------------------------- counts --- */
+
+.counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap);
+}
+
+.count {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 12px;
+  text-align: center;
+}
+
+.count-value {
+  display: block;
+  font-size: 1.7rem;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.count-label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.count-learning .count-value {
+  color: var(--hard);
+}
+.count-review .count-value {
+  color: var(--good);
+}
+.count-new .count-value {
+  color: var(--easy);
+}
+
+/* ---------------------------------------------------------------- cards --- */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.panel h2 {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.row:first-of-type {
+  padding-top: 0;
+}
+
+.row-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.row-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------- review --- */
+
+.review {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.progress {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 200ms ease;
+}
+
+.card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 20px;
+  min-height: 240px;
+  text-align: center;
+}
+
+.card-prompt {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  overflow-wrap: break-word;
+}
+
+.card-forms {
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.card-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
+}
+
+.card-answer {
+  font-size: 1.35rem;
+  font-weight: 500;
+  overflow-wrap: break-word;
+}
+
+.card-syn {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.card-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  font-size: 0.94rem;
+}
+
+.card-example {
+  color: var(--text);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  line-height: 1.45;
+}
+
+.card-note {
+  font-size: 0.86rem;
+  color: var(--muted);
+  text-align: left;
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+
+.card-meta {
+  font-size: 0.74rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* -------------------------------------------------------------- controls -- */
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.button {
+  appearance: none;
+  width: 100%;
+  min-height: 52px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 12px 16px;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.button-quiet {
+  background: transparent;
+  color: var(--muted);
+  min-height: 44px;
+  font-weight: 500;
+}
+
+.grades {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.grade {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 62px;
+  border-radius: 12px;
+  border: 1px solid currentColor;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 8px 4px;
+}
+
+.grade-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.grade-interval {
+  font-size: 0.7rem;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+
+.grade-again {
+  color: var(--again);
+}
+.grade-hard {
+  color: var(--hard);
+}
+.grade-good {
+  color: var(--good);
+}
+.grade-easy {
+  color: var(--easy);
+}
+
+/* --------------------------------------------------------------- notices -- */
+
+.notice {
+  border-radius: 10px;
+  padding: 11px 13px;
+  font-size: 0.87rem;
+  line-height: 1.45;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.notice-warn {
+  border-color: color-mix(in srgb, var(--hard) 45%, var(--border));
+}
+
+.notice-error {
+  border-color: color-mix(in srgb, var(--again) 45%, var(--border));
+}
+
+.notice details {
+  margin-top: 6px;
+}
+
+.notice summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.notice ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* -------------------------------------------------------------- settings -- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.field:last-child {
+  border-bottom: none;
+}
+
+.field label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.field-hint {
+  font-size: 0.79rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.field input[type='number'],
+.field select {
+  appearance: none;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 11px 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  width: 100%;
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* ----------------------------------------------------------------- stats -- */
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 96px;
+  padding-top: 8px;
+}
+
+.bar {
+  flex: 1;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+  opacity: 0.85;
+}
+
+.bar-empty {
+  background: var(--border);
+}
+
+.bars-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

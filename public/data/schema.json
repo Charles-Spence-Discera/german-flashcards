@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "German Flashcards vocabulary file",
+  "description": "The format of data/vocab.json. This file is the machine-readable contract; AUTHORING.md alongside it is the human-readable guide. Both are served at the live site, so a Claude session can fetch them directly rather than relying on a pasted spec.",
+  "type": "object",
+  "required": ["schemaVersion", "cards"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "description": "Format version. The app migrates older files forward automatically; do not raise this by hand."
+    },
+    "meta": { "$ref": "#/$defs/meta" },
+    "decks": {
+      "type": "array",
+      "description": "Saved filters. Cards are not stored inside decks; a deck describes which cards it selects.",
+      "items": { "$ref": "#/$defs/deck" }
+    },
+    "cards": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/card" }
+    }
+  },
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "updated": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Date of the last edit, YYYY-MM-DD. Informational only."
+        },
+        "note": { "type": "string" }
+      }
+    },
+    "deck": {
+      "type": "object",
+      "required": ["id", "name", "filter"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1, "description": "Shown in the deck picker." },
+        "filter": { "$ref": "#/$defs/filter" }
+      }
+    },
+    "filter": {
+      "type": "object",
+      "description": "Fields are ANDed; values within a field are ORed. An empty filter matches every card.",
+      "additionalProperties": false,
+      "properties": {
+        "sources": { "type": "array", "items": { "type": "string" } },
+        "chapters": { "type": "array", "items": { "type": "string" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "card": {
+      "type": "object",
+      "required": ["id", "de", "en"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Stable lowercase slug, unique across the file. THIS IS THE ONLY IMMUTABLE FIELD: all review history is keyed on it. Never change an id without listing the old value in prevIds."
+        },
+        "de": {
+          "type": "string",
+          "minLength": 1,
+          "description": "German headword as it would appear in a dictionary. Nouns include the article: 'die Gasse'."
+        },
+        "en": {
+          "type": "string",
+          "minLength": 1,
+          "description": "English translation. Several senses may be separated by commas or semicolons."
+        },
+        "pos": {
+          "enum": ["noun", "verb", "adj", "adv", "phrase", "other"],
+          "description": "Part of speech. Drives how 'forms' is labelled in the app."
+        },
+        "forms": {
+          "type": "string",
+          "description": "Nouns: article + plural, e.g. 'die Gasse, die Gassen'. Verbs: Präteritum + Partizip II, e.g. 'ging, ist gegangen'. Adjectives: comparative + superlative."
+        },
+        "syn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "German synonyms or near-synonyms."
+        },
+        "ex1": {
+          "type": "string",
+          "description": "Example sentence in the context the word was encountered, REWORDED rather than quoted from the source, with an English gloss in square brackets."
+        },
+        "ex2": {
+          "type": "string",
+          "description": "Plain everyday sentence. No translation."
+        },
+        "notiz": {
+          "type": "string",
+          "description": "Register notes, false friends, case or preposition patterns, irregularities."
+        },
+        "source": {
+          "type": "string",
+          "description": "Where the word came from: a book, article, podcast or lesson. Use exactly the same spelling across cards so deck filters match."
+        },
+        "chapter": {
+          "type": "string",
+          "description": "Subdivision of the source: chapter, episode, page. Free text, but keep it consistent."
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Free-form labels for grouping, e.g. 'b2', 'verb', 'trennbar'."
+        },
+        "added": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Date the card was added, YYYY-MM-DD."
+        },
+        "prevIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Former ids for this card. Listing an old id here migrates its review history to the new id instead of resetting it. An id listed here must not also exist as a live card."
+        },
+        "suspended": {
+          "type": "boolean",
+          "description": "Excluded from review queues. Its history is retained and returns intact when unsuspended."
+        }
+      }
+    }
+  }
+}
