@@ -4,8 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev": "npm run build:vocab && vite",
+    "build": "npm run build:vocab && tsc --noEmit && vite build",
+    "build:vocab": "tsx scripts/build-vocab.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

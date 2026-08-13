@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "German Flashcards vocabulary file",
-  "description": "The format of data/vocab.json. This file is the machine-readable contract; AUTHORING.md alongside it is the human-readable guide. Both are served at the live site, so a Claude session can fetch them directly rather than relying on a pasted spec.",
+  "description": "The format of the assembled data/vocab.json, which the build merges from data/cards/*.json. Cards are authored in those batch files and follow the `card` definition below; vocab.json itself is generated and must not be edited by hand. This file is the machine-readable contract; AUTHORING.md alongside it is the human-readable guide. Both are served at the live site, so a Claude session can fetch them directly rather than relying on a pasted spec.",
   "type": "object",
   "required": ["schemaVersion", "cards"],
   "additionalProperties": false,
@@ -31,7 +31,11 @@
           "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
           "description": "Date of the last edit, YYYY-MM-DD. Informational only."
         },
-        "note": { "type": "string" }
+        "note": { "type": "string" },
+        "generated": {
+          "type": "string",
+          "description": "Set by the build when merging cards/*.json. Not authored by hand."
+        }
       }
     },
     "deck": {

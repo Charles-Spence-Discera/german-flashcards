@@ -1,0 +1,45 @@
+{
+  "defaults": {
+    "source": "Das Lied der Krähen",
+    "chapter": "4",
+    "added": "2026-08-12"
+  },
+  "cards": [
+    {
+      "id": "die-schuld",
+      "de": "die Schuld",
+      "pos": "noun",
+      "forms": "die Schuld, die Schulden (Plural = Geldschulden)",
+      "en": "guilt, blame; (plural) debts",
+      "syn": ["die Verantwortung", "die Verbindlichkeit"],
+      "ex1": "Er zahlte seine Schulden nie mit Geld zurück, sondern immer mit Gefallen. [He never repaid his debts with money, only with favours.]",
+      "ex2": "Es ist nicht deine Schuld.",
+      "notiz": "Falscher Freund im Plural: „Schulden\" sind Geldschulden, nicht mehrere Schuldgefühle.",
+      "tags": ["b2", "noun"]
+    },
+    {
+      "id": "heimtueckisch",
+      "de": "heimtückisch",
+      "pos": "adj",
+      "forms": "heimtückischer, am heimtückischsten",
+      "en": "insidious, treacherous",
+      "syn": ["hinterhältig", "tückisch"],
+      "ex1": "Der Plan war heimtückisch genug, um zu funktionieren. [The plan was treacherous enough to work.]",
+      "ex2": "Die Krankheit verläuft oft heimtückisch.",
+      "notiz": "Stärker als „unehrlich\": impliziert versteckte Bosheit. Auch für Krankheiten üblich.",
+      "tags": ["c1", "adjektiv"]
+    },
+    {
+      "id": "sich-lohnen",
+      "de": "sich lohnen",
+      "pos": "verb",
+      "forms": "lohnte sich, hat sich gelohnt",
+      "en": "to be worth it, to pay off",
+      "syn": ["sich rentieren", "sich auszahlen"],
+      "ex1": "Das Risiko würde sich lohnen, sagte er, und keiner von ihnen glaubte ihm. [The risk would pay off, he said, and not one of them believed him.]",
+      "ex2": "Der frühe Aufstand hat sich gelohnt.",
+      "notiz": "Immer reflexiv. „Es lohnt sich, früh zu buchen.\"",
+      "tags": ["b2", "verb"]
+    }
+  ]
+}

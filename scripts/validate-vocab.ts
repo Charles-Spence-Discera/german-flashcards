@@ -1,102 +1,116 @@
 /**
- * Validates the vocabulary file.
+ * Validates the vocabulary batch files.
  *
- * This runs in CI before every deploy, and it is the reason a bad edit cannot reach
- * the phone. The vocab file is written by hand and by Claude sessions with no type
- * checking in between; without this gate, a missing comma or a duplicated id would
- * deploy cleanly and then break the app offline, where it is least debuggable.
+ * This runs in CI before every deploy and is the reason a bad edit cannot reach the
+ * phone. Cards are written by hand and by Claude sessions with no type checking in
+ * between; without this gate a missing comma or a duplicated id would deploy
+ * cleanly and then break the app offline, where it is least debuggable.
  *
- * Two layers, because they catch different things:
- *   1. JSON Schema (data/schema.json) — structure, types, unknown fields, id format.
- *   2. The app's own parser — duplicate ids, contested renames, everything that
- *      needs to compare cards against each other.
+ * Three layers, each catching what the previous cannot:
+ *   1. JSON parsing, per batch file.
+ *   2. JSON Schema (data/schema.json) — structure, types, unknown fields, id format.
+ *   3. The app's own parser — duplicate ids, contested renames, anything needing
+ *      cards to be compared against each other.
  *
- * Layer 2 uses exactly the code the app runs, so the two can never disagree about
- * what is loadable.
+ * Layer 3 uses exactly the code the app runs, so the two can never disagree about
+ * what is loadable. Everything is assembled in memory rather than read from a
+ * previously generated vocab.json, so validation cannot pass against stale output.
  *
  *   npm run validate:vocab
  */
 
 import { readFileSync } from 'node:fs'
-import { dirname, join, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
 // `ajv` proper is draft-07; the schema declares draft 2020-12, which lives here.
 import AjvModule from 'ajv/dist/2020'
+import { cardIdsByFile } from '../src/core/batches'
+import { matchesFilter } from '../src/core/queue'
 import { formatProblem, hasErrors, parseVocabFile } from '../src/core/schema'
+import { assembleVocab, loadVocabSources, SCHEMA_PATH } from './vocab-io'
 
 // ajv ships as CommonJS; under ESM the constructor arrives on `.default`.
 const Ajv = ((AjvModule as unknown as { default?: typeof AjvModule }).default ??
   AjvModule) as typeof AjvModule
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const VOCAB_PATH = join(ROOT, 'public', 'data', 'vocab.json')
-const SCHEMA_PATH = join(ROOT, 'public', 'data', 'schema.json')
-
-const red = (text: string) => `[31m${text}[0m`
-const yellow = (text: string) => `[33m${text}[0m`
-const green = (text: string) => `[32m${text}[0m`
-const dim = (text: string) => `[2m${text}[0m`
-
-function readJson(path: string): unknown {
-  let text: string
-  try {
-    text = readFileSync(path, 'utf8')
-  } catch {
-    console.error(red(`Cannot read ${relative(ROOT, path)}.`))
-    process.exit(1)
-  }
-  try {
-    return JSON.parse(text)
-  } catch (error) {
-    // Nearly every failure here is a trailing or missing comma, and the parser's
-    // position is the fastest way to find it.
-    console.error(red(`${relative(ROOT, path)} is not valid JSON.`))
-    console.error(`  ${error instanceof Error ? error.message : String(error)}`)
-    process.exit(1)
-  }
-}
-
-/** Turns an ajv instance path into something that names the offending card. */
-function describeLocation(instancePath: string, data: unknown): string {
-  const match = /^\/cards\/(\d+)/.exec(instancePath)
-  if (!match) return instancePath === '' ? 'file root' : instancePath
-  const index = Number(match[1])
-  const cards = (data as { cards?: unknown[] })?.cards
-  const card = Array.isArray(cards) ? (cards[index] as { id?: string; de?: string }) : undefined
-  const name = card?.id ?? card?.de ?? `entry ${index}`
-  const field = instancePath.slice(match[0].length).replace(/^\//, '')
-  return field ? `card "${name}" [${field}]` : `card "${name}"`
-}
-
-const vocab = readJson(VOCAB_PATH)
-const schema = readJson(SCHEMA_PATH)
+const red = (text: string) => `\x1b[31m${text}\x1b[0m`
+const yellow = (text: string) => `\x1b[33m${text}\x1b[0m`
+const green = (text: string) => `\x1b[32m${text}\x1b[0m`
+const dim = (text: string) => `\x1b[2m${text}\x1b[0m`
 
 let errorCount = 0
 let warningCount = 0
 
-/* Layer 1: structure. ------------------------------------------------------ */
+function reportError(where: string, message: string) {
+  console.error(`${red('ERROR')}  ${where}: ${message}`)
+  errorCount++
+}
 
+function reportWarning(where: string, message: string) {
+  console.warn(`${yellow('warn ')}  ${where}: ${message}`)
+  warningCount++
+}
+
+/* Layer 1: parse every batch file. ---------------------------------------- */
+
+const sources = loadVocabSources()
+
+for (const problem of sources.fatal) {
+  reportError(problem.file, problem.message)
+}
+
+if (errorCount > 0) {
+  console.error(red(`\nFailed: ${errorCount} file(s) could not be read.`))
+  process.exit(1)
+}
+
+const assembled = assembleVocab(sources)
+
+for (const problem of assembled.problems) {
+  reportError(problem.file, problem.message)
+}
+
+/* Layer 2: structure, against the JSON Schema. ---------------------------- */
+
+const schema = JSON.parse(readFileSync(SCHEMA_PATH, 'utf8')) as object
 const ajv = new Ajv({ allErrors: true, strict: false })
-const validate = ajv.compile(schema as object)
+const validate = ajv.compile(schema)
 
-if (!validate(vocab)) {
+/** Names the batch file and card behind an ajv instance path like `/cards/7/en`. */
+function locate(instancePath: string): string {
+  const match = /^\/cards\/(\d+)/.exec(instancePath)
+  if (!match) return instancePath === '' ? 'vocab document' : instancePath
+
+  const index = Number(match[1])
+  const card = assembled.cards[index] as { id?: string; de?: string } | undefined
+  const origin = assembled.origins[index] ?? 'unknown file'
+  const name = card?.id ?? card?.de ?? `entry ${index}`
+  const field = instancePath.slice(match[0].length).replace(/^\//, '')
+
+  return `${origin} → card "${name}"${field ? ` [${field}]` : ''}`
+}
+
+if (!validate(assembled.document)) {
   for (const error of validate.errors ?? []) {
-    const where = describeLocation(error.instancePath, vocab)
     const extra =
       error.keyword === 'additionalProperties'
         ? ` ("${(error.params as { additionalProperty: string }).additionalProperty}")`
         : ''
-    console.error(`${red('ERROR')}  ${where}: ${error.message}${extra}`)
-    errorCount++
+    reportError(locate(error.instancePath), `${error.message}${extra}`)
   }
 }
 
-/* Layer 2: semantics, using the app's own parser. -------------------------- */
+/* Layer 3: semantics, using the app's own parser. ------------------------- */
 
-const { file, problems, sourceVersion } = parseVocabFile(vocab)
+const { file, problems } = parseVocabFile(assembled.document)
+const originOf = cardIdsByFile(assembled.cards, assembled.origins)
 
 for (const problem of problems) {
-  const line = formatProblem(problem)
+  // Problem.index refers to the entry as written, so it names the file that
+  // actually contains the mistake — for a duplicate id that is the second file,
+  // not the innocent one that used the id first.
+  const origin =
+    (problem.index >= 0 ? assembled.origins[problem.index] : undefined) ??
+    (problem.cardId !== undefined ? originOf.get(problem.cardId) : undefined)
+  const line = `${origin ? `${origin} → ` : ''}${formatProblem(problem)}`
   if (problem.level === 'error') {
     console.error(red(line))
     errorCount++
@@ -106,25 +120,28 @@ for (const problem of problems) {
   }
 }
 
-/* Summary. ----------------------------------------------------------------- */
+/* Summary. ---------------------------------------------------------------- */
 
 console.log('')
 console.log(
   dim(
-    `${file.cards.length} cards, ${file.decks.length} decks, schema v${sourceVersion}` +
-      (sourceVersion !== file.schemaVersion ? ` (migrated to v${file.schemaVersion})` : ''),
+    `${file.cards.length} cards from ${sources.batches.length} batch file(s), ` +
+      `${file.decks.length} decks, schema v${file.schemaVersion}`,
   ),
 )
 
-// Deck filters that select nothing are almost always a spelling drift between a
-// filter and the `source` or `tags` on the cards, which is invisible in the app —
-// the deck simply appears empty.
+for (const batch of sources.batches) {
+  const count = assembled.origins.filter((origin) => origin === batch.name).length
+  console.log(dim(`  ${batch.name}: ${count} cards`))
+}
+
+// A deck matching nothing is almost always a spelling drift between the filter and
+// the cards' `source` or `tags`. It is invisible in the app — the deck just looks
+// empty — so it has to be caught here.
 for (const deck of file.decks) {
-  const { matchesFilter } = await import('../src/core/queue')
   const matched = file.cards.filter((card) => matchesFilter(card, deck.filter)).length
   if (matched === 0) {
-    console.warn(yellow(`warn   deck "${deck.name}" matches no cards — check its filter.`))
-    warningCount++
+    reportWarning('decks.json', `deck "${deck.name}" matches no cards — check its filter.`)
   } else {
     console.log(dim(`  deck "${deck.name}": ${matched} cards`))
   }

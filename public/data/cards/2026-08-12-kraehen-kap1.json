@@ -1,0 +1,46 @@
+{
+  "defaults": {
+    "source": "Das Lied der Krähen",
+    "chapter": "1",
+    "added": "2026-08-12",
+    "tags": ["b2"]
+  },
+  "cards": [
+    {
+      "id": "die-gasse",
+      "de": "die Gasse",
+      "pos": "noun",
+      "forms": "die Gasse, die Gassen",
+      "en": "alley, narrow lane",
+      "syn": ["die Seitenstraße", "der Durchgang"],
+      "ex1": "Sie verschwanden in einer engen Gasse, bevor die Wachen um die Ecke kamen. [They disappeared into a narrow alley before the guards came round the corner.]",
+      "ex2": "Hinter dem Markt gibt es eine kleine Gasse mit einem Café.",
+      "notiz": "Enger als eine Straße. „Gasse\" wird auch übertragen benutzt: jemandem eine Gasse bahnen.",
+      "tags": ["noun", "ort"]
+    },
+    {
+      "id": "der-hinterhalt",
+      "de": "der Hinterhalt",
+      "pos": "noun",
+      "forms": "der Hinterhalt, die Hinterhalte",
+      "en": "ambush",
+      "syn": ["die Falle"],
+      "ex1": "Der ganze Auftrag war von Anfang an ein Hinterhalt gewesen. [The whole job had been an ambush from the start.]",
+      "ex2": "Die Polizei geriet in einen Hinterhalt.",
+      "notiz": "Fast immer mit „in einen Hinterhalt geraten\" oder „aus dem Hinterhalt angreifen\".",
+      "tags": ["noun"]
+    },
+    {
+      "id": "schmuggeln",
+      "de": "schmuggeln",
+      "pos": "verb",
+      "forms": "schmuggelte, hat geschmuggelt",
+      "en": "to smuggle",
+      "syn": ["einschleusen"],
+      "ex1": "Er schmuggelte seit Jahren Waren durch den Hafen, ohne je erwischt zu werden. [He had been smuggling goods through the harbour for years without ever being caught.]",
+      "ex2": "Sie hat Schokolade ins Kino geschmuggelt.",
+      "notiz": "Regelmäßig. Oft mit „durch\" oder „nach\": etwas über die Grenze schmuggeln.",
+      "tags": ["verb"]
+    }
+  ]
+}

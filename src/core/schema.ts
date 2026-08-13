@@ -415,6 +415,10 @@ export function parseVocabFile(raw: unknown): ParseResult {
   }
 
   const cards: Card[] = []
+  // Source position of each accepted card, so every Problem.index refers to the
+  // entry as written rather than to a position in the filtered result. Callers use
+  // it to attribute problems back to a file and line.
+  const sourceIndexOf: number[] = []
   const seenIds = new Map<string, number>()
 
   for (let index = 0; index < rawCards.length; index++) {
@@ -436,13 +440,15 @@ export function parseVocabFile(raw: unknown): ParseResult {
     }
     seenIds.set(card.id, index)
     cards.push(card)
+    sourceIndexOf.push(index)
   }
 
   // Two ways a `prevIds` entry can be ambiguous about who inherits review history,
   // both of which would silently hand months of scheduling to the wrong card.
   const claimedBy = new Map<string, string>()
-  for (let index = 0; index < cards.length; index++) {
-    const card = cards[index]
+  for (let position = 0; position < cards.length; position++) {
+    const card = cards[position]
+    const index = sourceIndexOf[position] ?? position
     if (!card?.prevIds) continue
     for (const prev of card.prevIds) {
       // (1) The old id is still a live card, so it is not clear the card was renamed.

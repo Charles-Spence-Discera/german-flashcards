@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "note": "Decks are saved filters, not folders. Cards live in cards/*.json; see AUTHORING.md."
+  },
+  "decks": [
+    {
+      "id": "kraehen",
+      "name": "Das Lied der Krähen",
+      "filter": { "sources": ["Das Lied der Krähen"] }
+    },
+    {
+      "id": "kraehen-kap-1",
+      "name": "Krähen · Kapitel 1",
+      "filter": { "sources": ["Das Lied der Krähen"], "chapters": ["1"] }
+    },
+    {
+      "id": "verben",
+      "name": "Nur Verben",
+      "filter": { "tags": ["verb"] }
+    }
+  ]
+}

@@ -23,17 +23,30 @@ npm run build
 
 ## Adding vocabulary
 
-Cards go in [`public/data/vocab.json`](public/data/vocab.json). The format and the
-rules for editing it are in [`public/data/AUTHORING.md`](public/data/AUTHORING.md),
-with a machine-readable [`schema.json`](public/data/schema.json) alongside it. Both
-are served by the live site, so a Claude session can read the current spec directly:
+Cards live in `public/data/cards/`, one file per capture session. **Adding vocabulary
+means creating a new file, never editing an existing one** — the build merges them
+into the `vocab.json` the app fetches, which is generated and git-ignored.
+
+That constraint exists because cards are mostly added by a Claude session working
+from photographs on a phone. Read-modify-write over a growing corpus would mean
+pulling every card into context and re-emitting it in full each time; a truncated
+response would silently drop words that were already there.
+
+- [`CAPTURE.md`](CAPTURE.md) — capturing from your phone, with the prompt to use
+- [`public/data/AUTHORING.md`](public/data/AUTHORING.md) — the format and editing rules
+- [`public/data/schema.json`](public/data/schema.json) — machine-readable contract
+
+The last two are served by the live site, so a Claude session reads the current spec
+rather than a pasted one that has gone stale:
 
 ```
-https://<username>.github.io/german-flashcards/data/AUTHORING.md
+https://charles-spence-discera.github.io/german-flashcards/data/AUTHORING.md
 ```
 
-Run `npm run validate:vocab` before committing. It also runs in CI, and a failure
-blocks the deploy — a malformed vocab file cannot reach the installed app.
+Run `npm run validate:vocab` before committing. It parses each batch file, checks it
+against the schema, then runs the app's own parser for duplicate ids across files and
+contested renames — errors name the file at fault. It also runs in CI, and a failure
+blocks the deploy, so a malformed batch cannot reach the installed app.
 
 ## How it fits together
 
@@ -43,7 +56,7 @@ strictly apart:
 
 | | Owned by | Changes | Rebuildable |
 | --- | --- | --- | --- |
-| **Content** — words, examples, decks | `vocab.json` in git | Freely, by hand or by Claude | Yes |
+| **Content** — words, examples, decks | `data/cards/*.json` in git | Freely, by hand or by Claude | Yes |
 | **Progress** — ease, intervals, due dates | IndexedDB on the device | Only by reviewing | **No** |
 
 They are joined on `Card.id` and nothing else, which is why editing a translation,
@@ -56,6 +69,7 @@ rename explicitly declared via `prevIds`.
 src/core/
   types.ts      Card vs ReviewItem — the content/progress split
   schema.ts     Parsing, versioned migrations, tolerant reading
+  batches.ts    Merging per-batch card files, applying batch defaults
   scheduler.ts  SM-2 behind a swappable interface
   merge.ts      Joining content to progress without losing any
   queue.ts      Daily caps, deck filters, session ordering

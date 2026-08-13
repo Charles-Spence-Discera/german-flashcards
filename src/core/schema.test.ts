@@ -186,6 +186,36 @@ describe('tolerant coercion', () => {
   })
 })
 
+describe('problem indices', () => {
+  // Callers map an index back to the file and line that produced the entry, so it
+  // must always refer to the source position, never to a position in the result.
+  it('reports the source position even when earlier entries were dropped', () => {
+    const { problems } = parseVocabFile({
+      schemaVersion: 1,
+      cards: [
+        { de: 'kein id', en: 'dropped' },
+        minimal,
+        { id: 'gehen', de: 'duplikat', en: 'duplicate' },
+      ],
+    })
+    const duplicate = problems.find((p) => p.message.includes('Duplicate id'))
+    expect(duplicate?.index).toBe(2)
+  })
+
+  it('reports the source position for prevIds problems too', () => {
+    const { problems } = parseVocabFile({
+      schemaVersion: 1,
+      cards: [
+        { de: 'kein id', en: 'dropped' },
+        minimal,
+        { id: 'gehen-v2', de: 'gehen', en: 'to go', prevIds: ['gehen'] },
+      ],
+    })
+    const prevIdProblem = problems.find((p) => p.field === 'prevIds')
+    expect(prevIdProblem?.index).toBe(2)
+  })
+})
+
 describe('prevIds', () => {
   it('accepts a rename that points at an id no longer in the file', () => {
     const { problems } = parseVocabFile({

@@ -30,9 +30,11 @@ jobs:
 
       - run: npm ci
 
-      # Vocabulary first: it is the file most likely to be edited by hand or by a
-      # Claude session, and a bad edit here would otherwise deploy cleanly and then
-      # break the installed app offline, where it is hardest to diagnose.
+      # Vocabulary first: those files are the ones most likely to be edited by hand
+      # or by a Claude session, and a bad edit would otherwise deploy cleanly and
+      # then break the installed app offline, where it is hardest to diagnose.
+      # This assembles the batches in memory, so it validates exactly what the
+      # build will produce rather than a previously generated file.
       - name: Validate vocabulary
         run: npm run validate:vocab
 
@@ -41,6 +43,10 @@ jobs:
 
       - name: Test
         run: npm test
+
+      # vocab.json is generated, not committed — merged from public/data/cards/*.json.
+      - name: Assemble vocabulary
+        run: npm run build:vocab
 
       - name: Build
         run: npx vite build

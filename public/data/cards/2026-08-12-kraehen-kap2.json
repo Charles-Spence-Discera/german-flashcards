@@ -1,0 +1,46 @@
+{
+  "defaults": {
+    "source": "Das Lied der Krähen",
+    "chapter": "2",
+    "added": "2026-08-12",
+    "tags": ["b2"]
+  },
+  "cards": [
+    {
+      "id": "die-beute",
+      "de": "die Beute",
+      "pos": "noun",
+      "forms": "die Beute (meist Singular)",
+      "en": "loot, spoils; prey",
+      "syn": ["der Raub", "die Ausbeute"],
+      "ex1": "Sie stritten über die Beute, noch bevor sie sie in den Händen hielten. [They argued over the loot before they even had it in hand.]",
+      "ex2": "Der Fuchs schleppte seine Beute in den Bau.",
+      "notiz": "Kein Plural im Alltag. Doppelte Bedeutung: Diebesgut und Jagdbeute.",
+      "tags": ["noun"]
+    },
+    {
+      "id": "zoegern",
+      "de": "zögern",
+      "pos": "verb",
+      "forms": "zögerte, hat gezögert",
+      "en": "to hesitate",
+      "syn": ["schwanken", "unschlüssig sein"],
+      "ex1": "Sie zögerte nur einen Augenblick, dann sprang sie. [She hesitated only a moment, then jumped.]",
+      "ex2": "Zögere nicht, mich anzurufen.",
+      "notiz": "Ohne Präposition. „Zögern zu + Infinitiv\": Er zögerte zu antworten.",
+      "tags": ["verb"]
+    },
+    {
+      "id": "das-geruecht",
+      "de": "das Gerücht",
+      "pos": "noun",
+      "forms": "das Gerücht, die Gerüchte",
+      "en": "rumour",
+      "syn": ["das Gerede", "die Sage"],
+      "ex1": "In der Stadt hielt sich hartnäckig das Gerücht, er sei längst tot. [In the city a stubborn rumour persisted that he had long been dead.]",
+      "ex2": "Es geht das Gerücht, dass sie kündigt.",
+      "notiz": "Häufige Wendung: „Es geht das Gerücht, dass …\" oder „ein Gerücht in die Welt setzen\".",
+      "tags": ["noun"]
+    }
+  ]
+}

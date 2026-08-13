@@ -1,0 +1,46 @@
+{
+  "defaults": {
+    "source": "Das Lied der Krähen",
+    "chapter": "3",
+    "added": "2026-08-12",
+    "tags": ["b2"]
+  },
+  "cards": [
+    {
+      "id": "ruecksichtslos",
+      "de": "rücksichtslos",
+      "pos": "adj",
+      "forms": "rücksichtsloser, am rücksichtslosesten",
+      "en": "ruthless, inconsiderate",
+      "syn": ["skrupellos", "brutal"],
+      "ex1": "Er verfolgte seinen Plan rücksichtslos, ganz gleich, wer dabei zurückblieb. [He pursued his plan ruthlessly, no matter who was left behind.]",
+      "ex2": "Er fährt rücksichtslos und viel zu schnell.",
+      "notiz": "Gegenteil: rücksichtsvoll. Im Verkehr eher „inconsiderate\", bei Personen „ruthless\".",
+      "tags": ["adjektiv"]
+    },
+    {
+      "id": "der-auftrag",
+      "de": "der Auftrag",
+      "pos": "noun",
+      "forms": "der Auftrag, die Aufträge",
+      "en": "assignment, commission, order",
+      "syn": ["die Aufgabe", "die Bestellung"],
+      "ex1": "Der Auftrag war einfach beschrieben und fast unmöglich auszuführen. [The job was simply described and nearly impossible to carry out.]",
+      "ex2": "Die Firma hat einen großen Auftrag bekommen.",
+      "notiz": "„Im Auftrag von\" = on behalf of. Umlaut im Plural: die Aufträge.",
+      "tags": ["noun", "arbeit"]
+    },
+    {
+      "id": "verraten",
+      "de": "verraten",
+      "pos": "verb",
+      "forms": "verriet, hat verraten",
+      "en": "to betray; to give away (a secret)",
+      "syn": ["hintergehen", "preisgeben"],
+      "ex1": "Einer von ihnen hatte sie verraten, und jeder verdächtigte jeden. [One of them had betrayed the others, and everyone suspected everyone.]",
+      "ex2": "Verrate mir nicht das Ende des Films!",
+      "notiz": "Unregelmäßig, kein „ge-\" im Partizip. Zwei Bedeutungen: Menschen verraten, aber auch ein Geheimnis verraten.",
+      "tags": ["verb"]
+    }
+  ]
+}
