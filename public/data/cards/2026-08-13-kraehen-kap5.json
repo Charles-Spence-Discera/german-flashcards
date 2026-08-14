@@ -1,0 +1,142 @@
+{
+  "defaults": {
+    "source": "Das Lied der Krähen",
+    "chapter": "5",
+    "added": "2026-08-13",
+    "tags": ["b2"]
+  },
+  "cards": [
+    {
+      "id": "besaenftigen",
+      "de": "besänftigen",
+      "pos": "verb",
+      "forms": "besänftigte, hat besänftigt",
+      "en": "to placate, calm down, soothe",
+      "syn": ["beruhigen", "beschwichtigen"],
+      "ex1": "Sie holte tief Luft und versuchte, ihre Unruhe zu besänftigen, bevor die anderen es bemerkten. [She took a deep breath and tried to calm her unease before the others noticed.]",
+      "ex2": "Der Kellner versuchte, den wütenden Gast zu besänftigen.",
+      "notiz": "Meist reflexiv auf Gefühle bezogen (Wut, Unruhe, Zorn) oder auf Personen.",
+      "tags": ["verb"]
+    },
+    {
+      "id": "lauschen",
+      "de": "lauschen",
+      "pos": "verb",
+      "forms": "lauschte, hat gelauscht",
+      "en": "to listen intently, to eavesdrop",
+      "syn": ["horchen", "abhören"],
+      "ex1": "Sie lauschte auf die Stimmen im Hof unten, ohne sich zu bewegen. [She listened intently to the voices in the courtyard below without moving.]",
+      "ex2": "Die Kinder lauschten gespannt der Geschichte.",
+      "notiz": "Mit Dativ und „auf\": jemandem lauschen ODER auf etwas lauschen. Klingt literarischer als „zuhören\".",
+      "tags": ["verb"]
+    },
+    {
+      "id": "plaudern",
+      "de": "plaudern",
+      "pos": "verb",
+      "forms": "plauderte, hat geplaudert",
+      "en": "to chat, make small talk",
+      "syn": ["sich unterhalten", "schwatzen"],
+      "ex1": "Unten im Hof plauderten die beiden, als hätten sie alle Zeit der Welt. [Down in the courtyard the two of them chatted as if they had all the time in the world.]",
+      "ex2": "Wir haben nur kurz über das Wetter geplaudert.",
+      "notiz": "Leicht und beiläufig, im Gegensatz zu „diskutieren\" oder „verhandeln\".",
+      "tags": ["verb"]
+    },
+    {
+      "id": "abtasten",
+      "de": "abtasten",
+      "pos": "verb",
+      "forms": "tastete ab, hat abgetastet",
+      "en": "to pat down, feel over, frisk",
+      "syn": ["durchsuchen", "abklopfen"],
+      "ex1": "Die Sekundanten tasteten die Gegenseite ab, bevor sie den Zweikampf zuließen. [The seconds patted down the other side before allowing the duel.]",
+      "ex2": "Der Türsteher tastete jeden Gast am Eingang ab.",
+      "notiz": "Trennbares Verb. Wörtlich „mit den Händen abtasten\", oft im Sicherheitskontext.",
+      "tags": ["verb"]
+    },
+    {
+      "id": "hervorziehen",
+      "de": "hervorziehen",
+      "pos": "verb",
+      "forms": "zog hervor, hat hervorgezogen",
+      "en": "to pull out, produce (from hiding)",
+      "syn": ["herausziehen", "herausholen"],
+      "ex1": "Er zog das Messer so beiläufig aus dem Ärmel hervor, dass kaum jemand es bemerkte. [He pulled the knife out of his sleeve so casually that hardly anyone noticed.]",
+      "ex2": "Sie zog einen Schlüssel aus ihrer Tasche hervor.",
+      "notiz": "Trennbares Verb. Betont, dass etwas vorher verborgen war, im Gegensatz zum neutralen „herausnehmen\".",
+      "tags": ["verb"]
+    },
+    {
+      "id": "verwaessert",
+      "de": "verwässert",
+      "pos": "adj",
+      "forms": "verwässerter, am verwässertsten",
+      "en": "watered-down, diluted",
+      "syn": ["verdünnt", "gepanscht"],
+      "ex1": "Sie waren sich sicher, dass die Bar seit der Mieterhöhung verwässerte Drinks servierte. [They were certain the bar had been serving watered-down drinks since the rent went up.]",
+      "ex2": "Der Wein schmeckte verwässert und dünn.",
+      "notiz": "Partizip II von „verwässern\". Auch übertragen nutzbar: eine verwässerte Aussage, verwässerte Prinzipien.",
+      "tags": ["adjektiv"]
+    },
+    {
+      "id": "der-verdacht",
+      "de": "der Verdacht",
+      "pos": "noun",
+      "forms": "der Verdacht, die Verdachte (selten im Plural)",
+      "en": "suspicion",
+      "syn": ["der Argwohn", "die Vermutung"],
+      "ex1": "Der Verdacht, dass etwas nicht stimmte, ließ sie beide nicht los. [The suspicion that something was wrong wouldn't let either of them go.]",
+      "ex2": "Der Verdacht fiel sofort auf den neuen Kollegen.",
+      "notiz": "Häufig: „im Verdacht stehen\", „Verdacht schöpfen\", „unter Verdacht geraten\".",
+      "tags": ["noun"]
+    },
+    {
+      "id": "die-zusammenkunft",
+      "de": "die Zusammenkunft",
+      "pos": "noun",
+      "forms": "die Zusammenkunft, die Zusammenkünfte",
+      "en": "gathering, meeting",
+      "syn": ["das Treffen", "die Versammlung"],
+      "ex1": "Niemand sagte offen, warum die Zusammenkunft wirklich einberufen worden war. [No one said openly why the gathering had really been called.]",
+      "ex2": "Die jährliche Zusammenkunft findet im Rathaus statt.",
+      "notiz": "Förmlicher als „Treffen\". Häufig für offizielle oder feierliche Anlässe.",
+      "tags": ["noun"]
+    },
+    {
+      "id": "austauschen",
+      "de": "austauschen",
+      "pos": "verb",
+      "forms": "tauschte aus, hat ausgetauscht",
+      "en": "to exchange",
+      "syn": ["tauschen", "wechseln"],
+      "ex1": "Sie würden ein paar Höflichkeiten austauschen und so tun, als sei nichts gewesen. [They would exchange a few pleasantries and act as if nothing had happened.]",
+      "ex2": "Wir haben unsere Telefonnummern ausgetauscht.",
+      "notiz": "Trennbares Verb. Typische Objekte: Informationen, Höflichkeiten, Entschuldigungen, Blicke austauschen.",
+      "tags": ["verb"]
+    },
+    {
+      "id": "sich-einigen",
+      "de": "sich einigen",
+      "pos": "verb",
+      "forms": "einigte sich, hat sich geeinigt",
+      "en": "to agree, come to terms",
+      "syn": ["übereinkommen", "sich verständigen"],
+      "ex1": "Am Ende einigten sie sich darauf, dass die Grenzen respektiert würden, zumindest für diese eine Nacht. [In the end they agreed that the boundaries would be respected, at least for this one night.]",
+      "ex2": "Die beiden Firmen haben sich auf einen neuen Preis geeinigt.",
+      "notiz": "Immer reflexiv, mit „auf + Akkusativ\": sich auf etwas einigen.",
+      "tags": ["verb"]
+    },
+    {
+      "id": "vorsehen",
+      "de": "vorsehen",
+      "pos": "verb",
+      "forms": "sah vor, hat vorgesehen",
+      "en": "to plan, intend, have in mind for",
+      "syn": ["planen", "beabsichtigen"],
+      "ex1": "So hatte er den Abend vorgesehen, auch wenn am Ende alles anders kam. [That's how he had planned the evening, even though everything turned out differently in the end.]",
+      "ex2": "Für das Projekt sind zwei Wochen vorgesehen.",
+      "notiz": "Trennbares Verb, meist im Passiv oder Partizip II: etwas ist vorgesehen, war vorgesehen.",
+      "tags": ["verb"]
+    }
+  ]
+}
