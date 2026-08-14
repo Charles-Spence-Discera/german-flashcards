@@ -43,7 +43,13 @@ confirm the chapter isn't already captured.
 
 ## Step 3 — extract
 
-From the photos, pull vocabulary worth learning at **B2–C1**. Aim for **8–15 cards**.
+From the photos, pull vocabulary worth learning at **B2–C1**. Aim for **6–10 cards per
+page photographed** — the target scales with the number of pages, so four pages means
+roughly 24–40 cards, not 6–10 in total. Count the pages first and say what you're
+aiming for before you start extracting.
+
+A page that is mostly dialogue or mostly familiar words will yield fewer, and that's
+correct — don't pad to hit the number. Say that the page was thin instead.
 
 - Skip words Charlie would already know at B2.
 - Skip proper nouns — character and place names are not vocabulary.
@@ -74,6 +80,12 @@ changed id silently orphans months of scheduling.
 ## Step 4 — write a new file
 
 `public/data/cards/YYYY-MM-DD-<source>-<chapter>.json`, using **today's date**.
+
+Capture is per page, not per chapter, so a chapter is often several batches — sometimes
+several on the same day. **Check whether that filename already exists** and add a
+distinguishing suffix if it does: `2026-08-14-kraehen-kap6-b.json`, then `-c`. Files
+merge in filename order, so the suffix keeps the batches in capture order. Silently
+reusing the name would overwrite a batch you already committed.
 
 **Never append to an existing batch file, and never modify one.** Never touch
 `vocab.json` — it is generated at build time and hand edits are discarded. Creating a
