@@ -1,0 +1,142 @@
+{
+  "defaults": {
+    "source": "Das Lied der Krähen",
+    "chapter": "2",
+    "added": "2026-08-14",
+    "tags": ["b2"]
+  },
+  "cards": [
+    {
+      "id": "protzig",
+      "de": "protzig",
+      "pos": "adj",
+      "forms": "protziger, am protzigsten",
+      "en": "flashy, showy, ostentatious",
+      "syn": ["angeberisch", "prahlerisch"],
+      "ex1": "Die anderen Gäste trugen protzige Westen und Ringe, aber Kaz fiel durch seine schlichte Kleidung auf. [The other guests wore flashy vests and rings, but Kaz stood out through his plain clothing.]",
+      "ex2": "Der neue Nachbar fährt ein protziges Auto, das viel zu groß für die Straße ist.",
+      "notiz": "Meist abwertend, oft für Kleidung, Autos oder Häuser, die Reichtum zur Schau stellen.",
+      "tags": ["adjektiv"]
+    },
+    {
+      "id": "spicken",
+      "de": "spicken",
+      "pos": "verb",
+      "forms": "spickte, hat gespickt",
+      "en": "to lard, stud, riddle (with)",
+      "syn": ["durchsetzen", "überladen"],
+      "ex1": "Seine Taschenuhr war mit falschen Steinen gespickt, um teurer zu wirken, als sie war. [His pocket watch was studded with fake stones to look more expensive than it was.]",
+      "ex2": "Der Bericht war mit Fehlern gespickt.",
+      "notiz": "Fast immer im Partizip II als „mit etwas gespickt\", oft übertragen: mit Fehlern, Zitaten, Klischees gespickt.",
+      "tags": ["verb"]
+    },
+    {
+      "id": "erdenklich",
+      "de": "erdenklich",
+      "pos": "adj",
+      "forms": "kein Komparativ/Superlativ üblich",
+      "en": "conceivable, imaginable",
+      "syn": ["denkbar", "möglich"],
+      "ex1": "Er hatte Hosen mit jedem erdenklichen Muster gesehen, aber keines gefiel ihm wirklich. [He had seen trousers in every conceivable pattern, but none really appealed to him.]",
+      "ex2": "Sie hat jede erdenkliche Ausrede benutzt, um nicht zu kommen.",
+      "notiz": "Fast immer als „jeder/alle erdenkliche(n)\", verstärkend vor einem Substantiv.",
+      "tags": ["adjektiv"]
+    },
+    {
+      "id": "die-zurueckhaltung",
+      "de": "die Zurückhaltung",
+      "pos": "noun",
+      "forms": "die Zurückhaltung (kein Plural)",
+      "en": "restraint, reserve, reticence",
+      "syn": ["die Bescheidenheit", "die Diskretion"],
+      "ex1": "Seine Zurückhaltung bei der Kleiderwahl wirkte fast wie eine Provokation unter all den bunten Westen. [His restraint in choosing clothes seemed almost like a provocation among all the colourful vests.]",
+      "ex2": "Bei dem Streit bewahrte sie bemerkenswerte Zurückhaltung.",
+      "notiz": "Häufig: „sich in Zurückhaltung üben\", „aus Zurückhaltung schweigen\".",
+      "tags": ["noun"]
+    },
+    {
+      "id": "der-kraemer",
+      "de": "der Krämer",
+      "pos": "noun",
+      "forms": "der Krämer, die Krämer",
+      "en": "shopkeeper, small trader",
+      "syn": ["der Händler", "der Ladenbesitzer"],
+      "ex1": "Sie begriff, dass er mit seiner dunklen Kleidung die Krämer bewusst hochnahm. [She realized that with his dark clothing he was deliberately mocking the shopkeepers.]",
+      "ex2": "Der alte Krämer an der Ecke kennt jeden im Viertel.",
+      "notiz": "Etwas altmodisch, oft leicht abwertend. „Krämerseele\" = kleinlicher, geiziger Mensch.",
+      "tags": ["noun"]
+    },
+    {
+      "id": "hochnehmen",
+      "de": "hochnehmen",
+      "pos": "verb",
+      "forms": "nahm hoch, hat hochgenommen",
+      "en": "to tease, wind up, pull someone's leg",
+      "syn": ["aufziehen", "veräppeln"],
+      "ex1": "Erst spät verstand sie, dass er mit seinem Stil die reichen Krämer nur hochnahm. [Only later did she understand that with his style he was just mocking the wealthy shopkeepers.]",
+      "ex2": "Hör auf, mich hochzunehmen, ich meine es ernst.",
+      "notiz": "Trennbares Verb, umgangssprachlich. Nicht zu verwechseln mit der wörtlichen Bedeutung „hochheben\".",
+      "tags": ["verb"]
+    },
+    {
+      "id": "das-unbehagen",
+      "de": "das Unbehagen",
+      "pos": "noun",
+      "forms": "das Unbehagen (kein Plural)",
+      "en": "unease, discomfort, malaise",
+      "syn": ["das Unwohlsein", "die Beklommenheit"],
+      "ex1": "Das Unbehagen in ihr wuchs, je länger sie den jungen Priester in ihm sah. [The unease in her grew the longer she saw the young priest in him.]",
+      "ex2": "Ein leises Unbehagen machte sich im Raum breit.",
+      "notiz": "Oft mit „wachsend\" oder „leise\" kombiniert. Gegenteil: das Behagen.",
+      "tags": ["noun"]
+    },
+    {
+      "id": "sich-verstaerken",
+      "de": "sich verstärken",
+      "pos": "verb",
+      "forms": "verstärkte sich, hat sich verstärkt",
+      "en": "to intensify, grow stronger",
+      "syn": ["zunehmen", "sich steigern"],
+      "ex1": "Ihr Unbehagen verstärkte sich, als er zu predigen begann wie ein Priester. [Her unease intensified as he began to preach like a priest.]",
+      "ex2": "Der Regen hat sich am Nachmittag noch verstärkt.",
+      "notiz": "Reflexiv bei Gefühlen und Wetter; nicht-reflexiv „verstärken\" bedeutet, etwas anderes zu verstärken.",
+      "tags": ["verb"]
+    },
+    {
+      "id": "abgewrackt",
+      "de": "abgewrackt",
+      "pos": "adj",
+      "forms": "abgewrackter, am abgewracktesten",
+      "en": "worn-out, decrepit, clapped-out",
+      "syn": ["heruntergekommen", "klapprig"],
+      "ex1": "Sie hatte Geels früher als alt und abgewrackt beschrieben, aber heute Abend passte das nicht mehr. [She had earlier described Geels as old and clapped-out, but tonight that no longer fit.]",
+      "ex2": "Das abgewrackte Boot lag seit Jahren im Hafen.",
+      "notiz": "Ursprünglich von Schiffen (abwracken = verschrotten), umgangssprachlich auch für Personen/Dinge.",
+      "tags": ["adjektiv"]
+    },
+    {
+      "id": "aufkeimen",
+      "de": "aufkeimen",
+      "pos": "verb",
+      "forms": "keimte auf, ist aufgekeimt",
+      "en": "to sprout, emerge, begin to show (figurative: budding)",
+      "syn": ["entstehen", "sich regen"],
+      "ex1": "Unter seinen Falten keimte etwas auf, das jünger wirkte, als sie erwartet hatte. [Beneath his wrinkles something emerged that seemed younger than she had expected.]",
+      "ex2": "In ihr keimte langsam ein Verdacht auf.",
+      "notiz": "Meist übertragen: aufkeimende Zweifel, Hoffnung, Wut. Mit „sein\" im Perfekt.",
+      "tags": ["verb"]
+    },
+    {
+      "id": "die-predigt",
+      "de": "die Predigt",
+      "pos": "noun",
+      "forms": "die Predigt, die Predigten",
+      "en": "sermon",
+      "syn": ["die Ansprache"],
+      "ex1": "Er sah aus wie ein Priester, der den Zirkusartisten eine Predigt halten wollte. [He looked like a priest wanting to give the circus performers a sermon.]",
+      "ex2": "Der Pfarrer hielt eine lange Predigt über Geduld.",
+      "notiz": "Idiom: „jemandem eine Predigt halten\" = jemanden ausschimpfen/belehren, auch außerhalb der Kirche.",
+      "tags": ["noun"]
+    }
+  ]
+}
