@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { mergeProgress } from './core/merge'
-import { buildQueue, dailyCounts, queueCounts, type QueueCounts } from './core/queue'
+import { buildQueue, dailyCounts, pinActive, queueCounts, type QueueCounts } from './core/queue'
 import { createSm2Scheduler, type Scheduler } from './core/scheduler'
 import { parseVocabFile, type Problem } from './core/schema'
 import { withDefaults, type AppSettings } from './core/settings'
@@ -210,7 +210,20 @@ export function useApp() {
     [state.items, state.settings, doneToday, now, activeDeck],
   )
 
-  const queue = useMemo(() => buildQueue(queueInput), [queueInput])
+  /**
+   * The card on screen, held across background queue rebuilds.
+   *
+   * The queue is rebuilt on every clock tick, which reshuffles reviews and can
+   * promote a newly-due learning card to the front. Without this, the card being
+   * read would swap itself out mid-look. The ref is updated during render so the
+   * very next rebuild already knows what is on screen.
+   */
+  const activeKeyRef = useRef<string | null>(null)
+
+  const rebuilt = useMemo(() => buildQueue(queueInput), [queueInput])
+  const queue = useMemo(() => pinActive(rebuilt, activeKeyRef.current), [rebuilt])
+  activeKeyRef.current = queue[0]?.state.key ?? null
+
   const counts: QueueCounts = useMemo(() => queueCounts(queueInput), [queueInput])
 
   /**
