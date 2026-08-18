@@ -190,3 +190,29 @@ export function buildQueue(input: QueueInput): ReviewItem[] {
 
   return [...learning, ...interleave(cappedReviews, cappedFresh)]
 }
+
+/**
+ * Keeps whichever card is on screen at the front of a freshly rebuilt queue.
+ *
+ * `buildQueue` is recomputed continuously — on every clock tick, and whenever a
+ * learning step falls due — and each rebuild reshuffles the review pile and can
+ * promote a newly-due learning card ahead of everything else. Neither should be
+ * visible to someone mid-card: the queue behind position 0 may reorder freely,
+ * but the card being looked at must not swap itself out.
+ *
+ * `activeKey` is the key of the card currently shown. If it is still present in
+ * the rebuilt queue it is moved back to the front; if it has genuinely gone
+ * (graded, or filtered out by a deck switch) the queue is left untouched and the
+ * next card takes over.
+ */
+export function pinActive(queue: ReviewItem[], activeKey: string | null): ReviewItem[] {
+  if (activeKey === null) return queue
+
+  const index = queue.findIndex((item) => item.state.key === activeKey)
+  if (index <= 0) return queue
+
+  const active = queue[index]
+  if (active === undefined) return queue
+
+  return [active, ...queue.slice(0, index), ...queue.slice(index + 1)]
+}
