@@ -74,6 +74,7 @@ src/core/
   merge.ts      Joining content to progress without losing any
   queue.ts      Daily caps, deck filters, session ordering
   storage.ts    IndexedDB, plus JSON backup export/import
+  sync.ts       Unattended upload of that backup to a private GitHub repo
   stats.ts      Derived statistics — nothing accumulated
 ```
 
@@ -90,6 +91,37 @@ Review history exists only in the browser's storage on each device. Clearing sit
 data destroys it. **Settings → Sicherung → herunterladen** writes it to a JSON file;
 importing offers *merge* (keeps whichever copy of each card was reviewed more
 recently — safe after studying since the backup) or *replace*.
+
+The app also calls `navigator.storage.persist()` on startup, which asks the browser
+not to evict the database under storage pressure. That covers accidental loss, not a
+deliberate clearing of site data.
+
+### Automatic backup
+
+**Settings → Automatische Sicherung** uploads the same JSON to a file in a private
+GitHub repository, unprompted — at most once an hour, and only when something has
+been reviewed since the last upload. Each push is a commit, so every earlier version
+survives and a bad export cannot overwrite a good one.
+
+Setting it up, once:
+
+1. Create a **private** repository for it — not this one, where each push would
+   trigger a Pages deploy.
+2. Create a [fine-grained PAT](https://github.com/settings/personal-access-tokens)
+   scoped to that repository alone, with **Contents: read and write**.
+3. Paste the repository (`owner/repo`) and the token into Settings, tick
+   *Automatisch sichern*, and press **Verbindung testen** — which also warns if the
+   repository turns out to be public.
+
+The token is held in its own IndexedDB store rather than in `AppSettings`, because
+settings are written into every exported backup and backups travel. `exportAll` has a
+test asserting the token never appears in one.
+
+Token expiry is the realistic failure, and a backup that fails quietly is worse than
+none — so `syncHealth` classifies the state and the home screen carries a warning
+whenever sync is failing, has never run, or is more than three days behind. Staleness
+is measured against unpushed reviews, not against the clock: a fortnight away from the
+app raises nothing, because there is nothing to push.
 
 ## Deployment
 

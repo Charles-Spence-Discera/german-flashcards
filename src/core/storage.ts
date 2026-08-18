@@ -17,17 +17,22 @@
 
 import type { AppSettings } from './settings'
 import { withDefaults } from './settings'
+import type { SyncConfig } from './sync'
+import { withSyncDefaults } from './sync'
 import type { ReviewLogEntry, ReviewState } from './types'
 
 const DB_NAME = 'german-flashcards'
-// v2 added the vocab snapshot store. Upgrades only ever add stores, so existing
-// review history survives untouched.
-const DB_VERSION = 2
+// v2 added the vocab snapshot store, v3 the sync configuration. Upgrades only ever
+// add stores, so existing review history survives untouched.
+const DB_VERSION = 3
 
 const STORE_STATES = 'states'
 const STORE_LOG = 'log'
 const STORE_SETTINGS = 'settings'
 const STORE_VOCAB = 'vocab'
+// Deliberately not part of `settings`: settings are written into every backup, and
+// backups are uploaded, so a token stored there would publish itself.
+const STORE_SYNC = 'sync'
 
 export const BACKUP_KIND = 'german-flashcards-backup'
 export const BACKUP_VERSION = 1
@@ -72,6 +77,8 @@ export interface Store {
   loadLog(): Promise<ReviewLogEntry[]>
   loadSettings(): Promise<AppSettings>
   saveSettings(settings: AppSettings): Promise<void>
+  loadSyncConfig(): Promise<SyncConfig>
+  saveSyncConfig(config: SyncConfig): Promise<void>
   saveVocabSnapshot(raw: unknown): Promise<void>
   loadVocabSnapshot(): Promise<VocabSnapshot | null>
   exportAll(schedulerId: string): Promise<BackupFile>
@@ -116,6 +123,9 @@ function openDatabase(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORE_VOCAB)) {
         db.createObjectStore(STORE_VOCAB, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(STORE_SYNC)) {
+        db.createObjectStore(STORE_SYNC, { keyPath: 'id' })
       }
     }
     request.onsuccess = () => resolve(request.result)
@@ -258,6 +268,21 @@ function createIdbStore(db: IDBDatabase): Store {
       await promisifyTransaction(transaction)
     },
 
+    async loadSyncConfig() {
+      const transaction = db.transaction(STORE_SYNC, 'readonly')
+      const stored = await promisifyRequest<SyncConfig | undefined>(
+        transaction.objectStore(STORE_SYNC).get('sync') as IDBRequest<SyncConfig | undefined>,
+      )
+      await promisifyTransaction(transaction)
+      return withSyncDefaults(stored)
+    },
+
+    async saveSyncConfig(config) {
+      const transaction = db.transaction(STORE_SYNC, 'readwrite')
+      transaction.objectStore(STORE_SYNC).put(config)
+      await promisifyTransaction(transaction)
+    },
+
     async saveVocabSnapshot(raw) {
       const transaction = db.transaction(STORE_VOCAB, 'readwrite')
       transaction.objectStore(STORE_VOCAB).put({ id: 'vocab', raw, at: new Date().toISOString() })
@@ -276,6 +301,9 @@ function createIdbStore(db: IDBDatabase): Store {
     },
 
     async exportAll(schedulerId) {
+      // Note what is absent: the sync configuration, which holds an access token.
+      // Backups travel — by upload, by email, onto other devices — so nothing secret
+      // may be in one.
       const [states, log, settings] = await Promise.all([
         store.loadStates(),
         store.loadLog(),
@@ -364,6 +392,7 @@ export function createMemoryStore(): Store {
   const states = new Map<string, ReviewState>()
   let log: ReviewLogEntry[] = []
   let settings: AppSettings | null = null
+  let syncConfig: SyncConfig | null = null
   let snapshot: VocabSnapshot | null = null
 
   const store: Store = {
@@ -388,6 +417,12 @@ export function createMemoryStore(): Store {
     },
     async saveSettings(next) {
       settings = next
+    },
+    async loadSyncConfig() {
+      return withSyncDefaults(syncConfig)
+    },
+    async saveSyncConfig(next) {
+      syncConfig = next
     },
     async saveVocabSnapshot(raw) {
       snapshot = { raw, at: new Date().toISOString() }

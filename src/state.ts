@@ -14,6 +14,19 @@ import { createSm2Scheduler, type Scheduler } from './core/scheduler'
 import { parseVocabFile, type Problem } from './core/schema'
 import { withDefaults, type AppSettings } from './core/settings'
 import { backupFilename, openStore, type ImportMode, type ImportSummary, type Store } from './core/storage'
+import {
+  applyPushResult,
+  backupFingerprint,
+  isThrottled,
+  pushBackup,
+  sameTarget,
+  syncHealth,
+  syncReady,
+  testConnection,
+  withSyncDefaults,
+  type SyncConfig,
+  type SyncHealth,
+} from './core/sync'
 import type { Grade, ReviewItem, ReviewLogEntry, VocabFile } from './core/types'
 
 export type Screen = 'home' | 'review' | 'stats' | 'settings'
@@ -31,12 +44,32 @@ export interface LoadedState {
   items: ReviewItem[]
   log: ReviewLogEntry[]
   settings: AppSettings
+  /** Where automatic backups go, and how the last one went. */
+  sync: SyncConfig
 }
 
 const VOCAB_URL = `${import.meta.env.BASE_URL}data/vocab.json`
 
 /** How often the clock is re-read, so learning steps become due without a reload. */
 const TICK_MS = 5_000
+
+/**
+ * Asks the browser to exempt this origin from storage eviction.
+ *
+ * Without it, IndexedDB is "best effort" — Chrome may discard the whole database
+ * under storage pressure, taking every review with it and asking nobody. Installed
+ * PWAs are usually granted this silently; a refusal is not worth reporting, since
+ * the app cannot do anything about it and automatic backup covers the same risk.
+ */
+async function requestPersistence(): Promise<void> {
+  try {
+    if (!navigator.storage?.persist) return
+    if (await navigator.storage.persisted()) return
+    await navigator.storage.persist()
+  } catch {
+    /* not supported, or refused — either way there is nothing to do */
+  }
+}
 
 export function useApp() {
   const [state, setState] = useState<LoadedState>({
@@ -49,10 +82,15 @@ export function useApp() {
     items: [],
     log: [],
     settings: withDefaults(null),
+    sync: withSyncDefaults(null),
   })
   const [screen, setScreen] = useState<Screen>('home')
   const [tick, setTick] = useState(0)
   const storeRef = useRef<Store | null>(null)
+  // The sync config is read and written outside React's render cycle, by a push that
+  // may outlive the state update that triggered it. The ref is the authoritative copy.
+  const syncRef = useRef<SyncConfig>(withSyncDefaults(null))
+  const pushingRef = useRef(false)
 
   const scheduler: Scheduler = useMemo(
     () => createSm2Scheduler(state.settings.scheduler),
@@ -74,6 +112,8 @@ export function useApp() {
       storeRef.current = store
 
       const settings = await store.loadSettings()
+      const sync = await store.loadSyncConfig()
+      syncRef.current = sync
 
       /*
        * Fetch first, fall back to the last good copy.
@@ -130,6 +170,7 @@ export function useApp() {
         items: merged.items,
         log,
         settings,
+        sync,
       })
     } catch (error) {
       setState((previous) => ({
@@ -145,6 +186,7 @@ export function useApp() {
 
   useEffect(() => {
     void load()
+    void requestPersistence()
   }, [load])
 
   const doneToday = useMemo(
@@ -244,6 +286,114 @@ export function useApp() {
     [load],
   )
 
+  /** Identifies the history as it stands, so an unchanged corpus is not re-uploaded. */
+  const fingerprint = useMemo(() => backupFingerprint(state.log), [state.log])
+
+  const persistSync = useCallback((config: SyncConfig) => {
+    syncRef.current = config
+    const store = storeRef.current
+    if (store) void store.saveSyncConfig(config)
+    setState((previous) => ({ ...previous, sync: config }))
+  }, [])
+
+  /**
+   * Uploads the backup, if there is a reason to.
+   *
+   * Called on a timer and after every answer, so the cheap checks come first: the
+   * throttle and the configuration are consulted before anything touches IndexedDB,
+   * and the export — three store reads — happens at most once an hour. `force` is the
+   * button in Settings, which skips both the throttle and the unchanged check because
+   * the user pressing it *is* the reason.
+   *
+   * Failures are recorded rather than thrown. This runs unattended; the honest place
+   * for a broken token is the sync status in the UI, not an exception nobody catches.
+   */
+  const runSync = useCallback(
+    async (force: boolean): Promise<SyncConfig | null> => {
+      const store = storeRef.current
+      const config = syncRef.current
+      if (!store || pushingRef.current) return null
+      if (!syncReady(config)) return null
+      if (!force && isThrottled(config, new Date())) return null
+
+      pushingRef.current = true
+      try {
+        const backup = await store.exportAll(scheduler.id)
+        const pushed = backupFingerprint(backup.log)
+        if (!force && config.lastFingerprint === pushed) return null
+
+        const at = new Date()
+        const result = await pushBackup(config, backup, at)
+
+        // Settings may have been edited while the request was in flight. A new target
+        // has its own history and must not inherit this one's sha or timestamp, so
+        // the result is dropped and the next tick pushes to the new place instead.
+        const current = syncRef.current
+        if (!sameTarget(current, config)) return null
+
+        const next = applyPushResult(current, result, pushed, at)
+        persistSync(next)
+        return next
+      } finally {
+        pushingRef.current = false
+      }
+    },
+    [persistSync, scheduler.id],
+  )
+
+  /*
+   * The tick is already running for the clock, so riding it costs one comparison every
+   * five seconds and needs no scheduling of its own. `state.log.length` is in the
+   * dependencies so that finishing a session pushes promptly rather than waiting out
+   * the tick, subject to the same throttle.
+   */
+  useEffect(() => {
+    if (state.status !== 'ready') return
+    void runSync(false)
+  }, [state.status, state.log.length, tick, runSync])
+
+  /**
+   * Applies a settings change from the UI.
+   *
+   * Pointing at a different repository, branch or path starts over completely: the
+   * cached blob sha describes a file somewhere else, and reporting the old target's
+   * timestamp as this one's last backup would be a lie of exactly the kind this
+   * feature exists to prevent. Clearing the throttle too means the new target gets
+   * its first push immediately rather than an hour later.
+   */
+  const updateSync = useCallback(
+    (patch: Partial<SyncConfig>) => {
+      const previous = syncRef.current
+      const next = withSyncDefaults({ ...previous, ...patch })
+      const retargeted =
+        next.owner !== previous.owner ||
+        next.repo !== previous.repo ||
+        next.path !== previous.path ||
+        next.branch !== previous.branch
+      persistSync(
+        retargeted
+          ? {
+              ...next,
+              sha: null,
+              lastFingerprint: null,
+              lastAttemptAt: null,
+              lastSyncAt: null,
+              lastError: null,
+            }
+          : next,
+      )
+    },
+    [persistSync],
+  )
+
+  const health: SyncHealth = useMemo(
+    () => syncHealth(state.sync, fingerprint, now),
+    [state.sync, fingerprint, now],
+  )
+
+  /** Verifies the repository before the user trusts a month of history to it. */
+  const testSync = useCallback(() => testConnection(syncRef.current), [])
+
   return {
     ...state,
     screen,
@@ -258,6 +408,10 @@ export function useApp() {
     updateSettings,
     exportBackup,
     importBackup,
+    updateSync,
+    syncNow: () => runSync(true),
+    syncHealth: health,
+    testSync,
     reload: load,
   }
 }

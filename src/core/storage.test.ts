@@ -11,6 +11,7 @@ import {
   type Store,
 } from './storage'
 import { DEFAULT_APP_SETTINGS } from './settings'
+import { DEFAULT_SYNC_CONFIG } from './sync'
 import type { ReviewLogEntry, ReviewState } from './types'
 
 function state(key: string, overrides: Partial<ReviewState> = {}): ReviewState {
@@ -167,6 +168,32 @@ describe.each(implementations)('store: %s', (name, create) => {
       expect(backup.log).toHaveLength(1)
       expect(backup.settings).not.toBeNull()
       expect(() => JSON.parse(JSON.stringify(backup))).not.toThrow()
+    })
+
+    it('leaves the sync token out of the file', async () => {
+      // Backups get uploaded, emailed and copied between devices. A credential in one
+      // would travel with it, so this is a guarantee and not an implementation detail.
+      await store.saveSyncConfig({
+        ...DEFAULT_SYNC_CONFIG,
+        owner: 'charlie',
+        repo: 'backups',
+        token: 'github_pat_secret',
+      })
+      const backup = await store.exportAll('sm2-v1')
+
+      expect(JSON.stringify(backup)).not.toContain('github_pat_secret')
+    })
+  })
+
+  describe('sync configuration', () => {
+    it('defaults before anything is saved', async () => {
+      expect(await store.loadSyncConfig()).toEqual(DEFAULT_SYNC_CONFIG)
+    })
+
+    it('round-trips', async () => {
+      const config = { ...DEFAULT_SYNC_CONFIG, enabled: true, owner: 'charlie', repo: 'backups' }
+      await store.saveSyncConfig(config)
+      expect(await store.loadSyncConfig()).toEqual(config)
     })
   })
 

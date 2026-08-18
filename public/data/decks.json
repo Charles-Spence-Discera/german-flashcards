@@ -14,6 +14,11 @@
       "filter": { "sources": ["Das Lied der Krähen"], "chapters": ["1"] }
     },
     {
+      "id": "lesson-vanessa",
+      "name": "Lesson mit Vanessa",
+      "filter": { "sources": ["Lesson mit Vanessa"] }
+    },
+    {
       "id": "verben",
       "name": "Nur Verben",
       "filter": { "tags": ["verb"] }

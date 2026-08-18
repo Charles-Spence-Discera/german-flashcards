@@ -1,6 +1,199 @@
 import { useRef, useState } from 'preact/hooks'
 import type { ImportMode } from '../core/storage'
+import { parseRepoRef, type SyncHealth } from '../core/sync'
 import type { App } from '../state'
+
+const HEALTH_LABEL: Record<SyncHealth, string> = {
+  off: 'aus',
+  never: 'noch nie gelaufen',
+  ok: 'aktuell',
+  pending: 'im Rückstand',
+  failing: 'fehlgeschlagen',
+}
+
+function formatWhen(iso: string | null): string {
+  if (iso === null) return 'nie'
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return 'nie'
+  return at.toLocaleString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+/**
+ * Setting up and watching the automatic backup.
+ *
+ * The status rows matter as much as the fields: an automatic backup that has quietly
+ * stopped is the failure this whole feature exists to prevent, so what it did last and
+ * when is always on screen rather than hidden behind a successful-looking checkbox.
+ */
+function SyncPanel({ app }: { app: App }) {
+  const config = app.sync
+  const [repoInput, setRepoInput] = useState(
+    config.owner === '' ? '' : `${config.owner}/${config.repo}`,
+  )
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
+  function commitRepo(raw: string) {
+    setRepoInput(raw)
+    if (raw.trim() === '') {
+      app.updateSync({ owner: '', repo: '' })
+      return
+    }
+    const parsed = parseRepoRef(raw)
+    if (parsed === null) {
+      setMessage('Repository muss die Form „benutzername/repo“ haben.')
+      return
+    }
+    setMessage(null)
+    app.updateSync(parsed)
+  }
+
+  async function runTest() {
+    setBusy(true)
+    setMessage('Wird geprüft…')
+    try {
+      const result = await app.testSync()
+      if (!result.ok) {
+        setMessage(result.error)
+      } else if (!result.private) {
+        setMessage(
+          'Verbindung steht — aber das Repository ist öffentlich. Der Lernverlauf wäre für ' +
+            'jeden lesbar. Besser ein privates Repository verwenden.',
+        )
+      } else {
+        setMessage(`Verbindung steht. Privates Repository, Branch „${result.defaultBranch}“.`)
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function runSyncNow() {
+    setBusy(true)
+    setMessage('Wird hochgeladen…')
+    try {
+      const result = await app.syncNow()
+      if (result === null) {
+        setMessage('Noch nicht vollständig eingerichtet.')
+      } else if (result.lastError !== null) {
+        // The stored error is already on screen below; repeating it here would show
+        // the same sentence twice.
+        setMessage(null)
+      } else {
+        setMessage(`Hochgeladen: ${formatWhen(result.lastSyncAt)}.`)
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div class="panel">
+      <h2>Automatische Sicherung</h2>
+      <p class="field-hint">
+        Lädt den Lernfortschritt von selbst in ein privates GitHub-Repository, höchstens einmal
+        pro Stunde und nur wenn seither gelernt wurde. Jeder Upload ist ein Commit, also bleibt
+        auch jede frühere Fassung erhalten.
+      </p>
+
+      <div class="row">
+        <span class="row-label">Status</span>
+        <span
+          class={`row-value ${app.syncHealth === 'failing' || app.syncHealth === 'pending' ? 'row-value-warn' : ''}`}
+        >
+          {HEALTH_LABEL[app.syncHealth]}
+        </span>
+      </div>
+      <div class="row">
+        <span class="row-label">Letzte Sicherung</span>
+        <span class="row-value">{formatWhen(config.lastSyncAt)}</span>
+      </div>
+
+      <div class="field">
+        <label for="sync-repo">Repository</label>
+        <input
+          id="sync-repo"
+          type="text"
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck={false}
+          placeholder="benutzername/german-flashcards-backup"
+          value={repoInput}
+          onChange={(event) => commitRepo((event.target as HTMLInputElement).value)}
+        />
+        <span class="field-hint">
+          Ein eigenes, privates Repository — nicht das mit den Vokabeln, sonst löst jede Sicherung
+          einen Deploy aus.
+        </span>
+      </div>
+
+      <div class="field">
+        <label for="sync-path">Datei im Repository</label>
+        <input
+          id="sync-path"
+          type="text"
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck={false}
+          value={config.path}
+          onChange={(event) => app.updateSync({ path: (event.target as HTMLInputElement).value })}
+        />
+      </div>
+
+      <div class="field">
+        <label for="sync-token">Zugriffstoken</label>
+        <input
+          id="sync-token"
+          type="password"
+          autocomplete="off"
+          spellcheck={false}
+          placeholder="github_pat_…"
+          value={config.token}
+          onChange={(event) => app.updateSync({ token: (event.target as HTMLInputElement).value })}
+        />
+        <span class="field-hint">
+          Fine-grained Token, nur für dieses eine Repository, Berechtigung „Contents: read and
+          write“. Es bleibt auf diesem Gerät und steht in keiner heruntergeladenen Sicherung.
+        </span>
+      </div>
+
+      <div class="field">
+        <label class="field-check">
+          <input
+            type="checkbox"
+            checked={config.enabled}
+            onChange={(event) =>
+              app.updateSync({ enabled: (event.target as HTMLInputElement).checked })
+            }
+          />
+          Automatisch sichern
+        </label>
+      </div>
+
+      <div class="field">
+        <div class="button-row">
+          <button class="button" disabled={busy} onClick={() => void runTest()}>
+            Verbindung testen
+          </button>
+          <button class="button" disabled={busy} onClick={() => void runSyncNow()}>
+            Jetzt sichern
+          </button>
+        </div>
+      </div>
+
+      {config.lastError !== null ? (
+        <div class="notice notice-warn">{config.lastError}</div>
+      ) : null}
+      {message !== null ? <div class="notice">{message}</div> : null}
+    </div>
+  )
+}
 
 export function Settings({ app }: { app: App }) {
   const fileInput = useRef<HTMLInputElement>(null)
@@ -138,6 +331,8 @@ export function Settings({ app }: { app: App }) {
         />
         {message ? <div class="notice">{message}</div> : null}
       </div>
+
+      <SyncPanel app={app} />
 
       <div class="panel">
         <h2>Vokabeln</h2>

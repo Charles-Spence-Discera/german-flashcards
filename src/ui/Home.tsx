@@ -1,6 +1,20 @@
 import { hasErrors, formatProblem } from '../core/schema'
 import type { App } from '../state'
 
+/**
+ * What to say when the automatic backup is not doing its job.
+ *
+ * Only reached when sync is switched on: a user who never set it up is not nagged
+ * here, and one who did is told on the first screen rather than in a settings tab
+ * nobody opens. A silent backup failure is the one failure this app cannot recover
+ * from, so it earns space on the home screen.
+ */
+const SYNC_WARNING: Partial<Record<App['syncHealth'], string>> = {
+  failing: 'Die automatische Sicherung schlägt fehl. Der Fortschritt liegt gerade nur auf diesem Gerät.',
+  pending: 'Seit Tagen nichts gesichert. Der neue Lernfortschritt liegt nur auf diesem Gerät.',
+  never: 'Die automatische Sicherung ist eingerichtet, aber noch nie gelaufen.',
+}
+
 export function Home({ app }: { app: App }) {
   const { counts, file } = app
   const total = counts.learning + counts.review + counts.fresh
@@ -26,6 +40,15 @@ export function Home({ app }: { app: App }) {
         <div class="notice notice-warn">
           Dieses Gerät erlaubt keinen dauerhaften Speicher. Der Fortschritt geht verloren, wenn du
           die App schließt.
+        </div>
+      ) : null}
+
+      {SYNC_WARNING[app.syncHealth] ? (
+        <div class="notice notice-warn">
+          {SYNC_WARNING[app.syncHealth]}{' '}
+          <button class="link-button" onClick={() => app.setScreen('settings')}>
+            Einstellungen öffnen
+          </button>
         </div>
       ) : null}
 
