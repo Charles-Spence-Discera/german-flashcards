@@ -22,6 +22,21 @@
       "id": "verben",
       "name": "Nur Verben",
       "filter": { "tags": ["verb"] }
+    },
+    {
+      "id": "redewendungen",
+      "name": "Redewendungen · C1",
+      "filter": {
+        "ids": [
+          "die-fassung",
+          "zu-schaetzen-wissen",
+          "zu-allem-ueberfluss",
+          "zum-opfer-fallen",
+          "auf-die-probe-stellen",
+          "aus-dem-bauch-heraus",
+          "abgekartet"
+        ]
+      }
     }
   ]
 }
