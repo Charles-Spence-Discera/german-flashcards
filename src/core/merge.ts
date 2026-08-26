@@ -21,13 +21,31 @@
 import { itemKey, type Scheduler } from './scheduler'
 import type { Card, ItemMode, ReviewItem, ReviewState } from './types'
 
+/**
+ * Decides whether one mode of one card should exist yet, given whatever progress
+ * that card already has. Returning false withholds an item; it never removes one,
+ * because a mode that already has stored progress is expected to answer true (see
+ * `isModeUnlocked`, which latches for exactly that reason).
+ */
+export type ModeGate = (
+  card: Card,
+  mode: ItemMode,
+  stateFor: (mode: ItemMode) => ReviewState | undefined,
+) => boolean
+
 export interface MergeInput {
   /** Cards from the vocab file, already normalised. */
   cards: Card[]
   /** Everything currently in storage, keyed by `ReviewState.key`. */
   stored: Map<string, ReviewState>
-  /** Modes to generate items for. Adding one here creates items; it destroys none. */
+  /** Modes to consider. Adding one here creates items; it destroys none. */
   modes: ItemMode[]
+  /**
+   * Narrows `modes` per card, so that a direction can be earned rather than granted.
+   * Omitted means every mode applies to every card, which is what the tests and any
+   * caller without a progression rule want.
+   */
+  gate?: ModeGate
   scheduler: Scheduler
   now?: Date
 }
@@ -68,7 +86,7 @@ export interface MergeResult {
  * what happens to existing progress — fully testable without a database.
  */
 export function mergeProgress(input: MergeInput): MergeResult {
-  const { cards, stored, modes, scheduler } = input
+  const { cards, stored, modes, gate, scheduler } = input
   const now = input.now ?? new Date()
 
   const liveCardIds = new Set(cards.map((card) => card.id))
@@ -81,6 +99,8 @@ export function mergeProgress(input: MergeInput): MergeResult {
    */
   const liveKeys = new Set<string>()
   for (const card of cards) {
+    // Every *candidate* mode, including ones the gate is currently withholding: a
+    // rename must not be able to claim a key that is about to be unlocked.
     for (const mode of modes) liveKeys.add(itemKey(card.id, mode))
   }
 
@@ -111,7 +131,15 @@ export function mergeProgress(input: MergeInput): MergeResult {
       continue
     }
 
+    /** This card's stored progress in any mode, for the gate to reason about. */
+    const stateFor = (mode: ItemMode): ReviewState | undefined =>
+      stored.get(itemKey(card.id, mode))
+
     for (const mode of modes) {
+      // A mode the card has not earned yet produces nothing — and, having no stored
+      // state to leave behind, nothing to retain either.
+      if (gate !== undefined && !gate(card, mode, stateFor)) continue
+
       const key = itemKey(card.id, mode)
 
       const existing = stored.get(key)

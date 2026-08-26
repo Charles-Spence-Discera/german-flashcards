@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mergeProgress } from './merge'
+import { ALL_MODES, isModeUnlocked } from './modes'
 import { DEFAULT_SETTINGS, createSm2Scheduler, itemKey } from './scheduler'
 import type { Card, ItemMode, ReviewState } from './types'
 
@@ -314,5 +315,86 @@ describe('the safety property', () => {
 
     expect(result.toDelete).toEqual([])
     expect(result.orphaned.map((s) => s.cardId).sort()).toEqual(['c', 'd'])
+  })
+})
+
+describe('mode unlocking', () => {
+  /** The real progression rule, wired exactly as the app wires it. */
+  function withGate(
+    cards: Card[],
+    stored: Map<string, ReviewState>,
+    thresholdDays = 5,
+  ) {
+    return mergeProgress({
+      cards,
+      stored,
+      modes: [...ALL_MODES],
+      gate: (subject, mode, stateFor) =>
+        isModeUnlocked(subject, mode, stateFor, thresholdDays),
+      scheduler,
+      now: NOW,
+    })
+  }
+
+  function modesOf(result: ReturnType<typeof withGate>) {
+    return result.items.map((entry) => entry.state.mode).sort()
+  }
+
+  it('gives an unseen card the base mode only', () => {
+    const result = withGate([card('gehen')], storage())
+    expect(modesOf(result)).toEqual(['de-en'])
+  })
+
+  it('withholds the productive modes while the base interval is short', () => {
+    const young = { ...progressed('gehen'), intervalDays: 2 }
+    const result = withGate([card('gehen')], storage(young))
+    expect(modesOf(result)).toEqual(['de-en'])
+    expect(result.toPersist).toEqual([])
+  })
+
+  it('unlocks both productive modes once the base interval matures', () => {
+    const result = withGate([card('gehen')], storage(progressed('gehen')))
+    expect(modesOf(result)).toEqual(['de-en', 'en-de', 'typed-de'])
+  })
+
+  it('unlocks without disturbing the history that earned it', () => {
+    const earned = progressed('gehen')
+    const result = withGate([card('gehen')], storage(earned))
+
+    const base = result.items.find((entry) => entry.state.mode === 'de-en')
+    expect(base?.state).toEqual(earned)
+
+    // The new directions start from scratch: recognising a word is not evidence of
+    // being able to produce it, so they must not inherit its interval.
+    const unlocked = result.items.filter((entry) => entry.state.mode !== 'de-en')
+    expect(unlocked).toHaveLength(2)
+    expect(unlocked.every((entry) => entry.state.phase === 'new')).toBe(true)
+    expect(unlocked.every((entry) => entry.state.intervalDays === 0)).toBe(true)
+
+    expect(result.toPersist).toHaveLength(2)
+    expect(result.toDelete).toEqual([])
+    expect(result.orphaned).toEqual([])
+  })
+
+  it('keeps unlocked modes when the base card later lapses', () => {
+    const lapsed = { ...progressed('gehen'), phase: 'relearning' as const, intervalDays: 1 }
+    const alreadyEarned = progressed('gehen', 'typed-de')
+    const result = withGate([card('gehen')], storage(lapsed, alreadyEarned))
+
+    // Latched. Re-locking would strand this item's progress outside the queue.
+    expect(modesOf(result)).toEqual(['de-en', 'typed-de'])
+    expect(result.toDelete).toEqual([])
+    expect(result.orphaned).toEqual([])
+  })
+
+  it('raising the threshold never removes what is already unlocked', () => {
+    const earned = progressed('gehen')
+    const opened = withGate([card('gehen')], storage(earned))
+    const stored = storage(earned, ...opened.toPersist)
+
+    const stricter = withGate([card('gehen')], stored, 999)
+    expect(modesOf(stricter)).toEqual(['de-en', 'en-de', 'typed-de'])
+    expect(stricter.toDelete).toEqual([])
+    expect(stricter.orphaned).toEqual([])
   })
 })

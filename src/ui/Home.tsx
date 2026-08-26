@@ -17,7 +17,7 @@ const SYNC_WARNING: Partial<Record<App['syncHealth'], string>> = {
 
 export function Home({ app }: { app: App }) {
   const { counts, file } = app
-  const total = counts.learning + counts.review + counts.fresh
+  const total = counts.learning + counts.review + counts.fresh + counts.aufbau
   const decks = file?.decks ?? []
   const cardCount = file?.cards.length ?? 0
 
@@ -78,7 +78,7 @@ export function Home({ app }: { app: App }) {
           <span class="count-label">Fällig</span>
         </div>
         <div class="count count-new">
-          <span class="count-value">{counts.fresh}</span>
+          <span class="count-value">{counts.fresh + counts.aufbau}</span>
           <span class="count-label">Neu</span>
         </div>
       </div>
@@ -115,11 +115,93 @@ export function Home({ app }: { app: App }) {
       ) : null}
 
       <div class="panel">
+        <h2>Aufbaukarten</h2>
+        <div class="field">
+          <label>Sitzung</label>
+          <div class="segmented">
+            <button
+              type="button"
+              class={`segment ${app.settings.sessionMode === 'breadth' ? 'segment-on' : ''}`}
+              onClick={() => app.updateSettings({ sessionMode: 'breadth' })}
+            >
+              Breite
+            </button>
+            <button
+              type="button"
+              class={`segment ${app.settings.sessionMode === 'depth' ? 'segment-on' : ''}`}
+              onClick={() => app.updateSettings({ sessionMode: 'depth' })}
+            >
+              Tiefe
+            </button>
+          </div>
+          <p class="field-hint">
+            Breite zeigt jedes Wort höchstens einmal pro Sitzung und schiebt die übrigen
+            Abfragearten ans Ende. Tiefe lässt alle Abfragearten desselben Wortes am selben Tag
+            zu.
+          </p>
+        </div>
+
+        <div class="field">
+          <label for="aufbau-per-day">Aufbaukarten pro Tag</label>
+          <select
+            id="aufbau-per-day"
+            value={String(app.settings.aufbauPerDay)}
+            onChange={(event) =>
+              app.updateSettings({
+                aufbauPerDay: Number((event.target as HTMLSelectElement).value),
+              })
+            }
+          >
+            {[0, 3, 5, 10, 15, 20, 30].map((value) => (
+              <option key={value} value={String(value)}>
+                {value === 0 ? 'aus' : value}
+              </option>
+            ))}
+          </select>
+          <p class="field-hint">
+            Wie viele neu freigeschaltete Abfragearten täglich dazukommen — getrennt von den
+            neuen Vokabeln, damit sich beide nicht verdrängen. „Aus“ pausiert nur den Zulauf;
+            bereits freigeschaltete Karten und ihr Fortschritt bleiben erhalten.
+          </p>
+        </div>
+
+        <div class="field">
+          <label for="aufbau-threshold">Aufbaukarten ab</label>
+          <select
+            id="aufbau-threshold"
+            value={String(app.settings.aufbauThresholdDays)}
+            onChange={(event) =>
+              app.updateSettings({
+                aufbauThresholdDays: Number((event.target as HTMLSelectElement).value),
+              })
+            }
+          >
+            {[3, 5, 7, 10, 14, 21, 30].map((value) => (
+              <option key={value} value={String(value)}>
+                {value} Tagen
+              </option>
+            ))}
+          </select>
+          <p class="field-hint">
+            Ab welchem Intervall bei „Deutsch → Englisch“ ein Wort zusätzlich als „Englisch →
+            Deutsch“ und „Schreiben“ abgefragt wird. Einmal freigeschaltet bleibt es
+            freigeschaltet.
+          </p>
+        </div>
+      </div>
+
+      <div class="panel">
         <h2>Heute</h2>
         <div class="row">
           <span class="row-label">Neue Karten gelernt</span>
           <span class="row-value">
             {app.doneToday.introduced} / {app.settings.newPerDay}
+          </span>
+        </div>
+        <div class="row">
+          <span class="row-label">Aufbaukarten dazu</span>
+          <span class="row-value">
+            {app.doneToday.aufbauIntroduced} / {app.settings.aufbauPerDay}
           </span>
         </div>
         <div class="row">

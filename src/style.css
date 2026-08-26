@@ -569,3 +569,82 @@ body {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* --- Aufbaukarten: session toggle, typed answers --- */
+
+.segmented {
+  display: flex;
+  gap: 6px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+}
+.segment {
+  flex: 1;
+  appearance: none;
+  background: none;
+  border: none;
+  border-radius: 7px;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 9px 8px;
+  cursor: pointer;
+}
+.segment-on {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.card-typed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.typed-input {
+  appearance: none;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1.35rem;
+  padding: 12px 14px;
+  width: 100%;
+}
+.typed-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.typed-input[readonly] {
+  color: var(--muted);
+}
+
+.umlauts {
+  display: flex;
+  gap: 8px;
+}
+.umlaut {
+  flex: 1;
+  appearance: none;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1.1rem;
+  padding: 9px 0;
+  cursor: pointer;
+}
+.umlaut:active {
+  background: var(--border);
+}
+
+/* Present only when the answer matched — there is deliberately no "wrong" state. */
+.tick {
+  color: var(--good);
+  font-weight: 600;
+  font-size: 1rem;
+}

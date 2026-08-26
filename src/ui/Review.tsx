@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
+import { modeLabel } from '../core/modes'
+import { isSpellingCorrect } from '../core/spelling'
 import type { Grade, ReviewItem } from '../core/types'
 import type { App } from '../state'
 
@@ -9,16 +11,19 @@ const GRADES: { grade: Grade; label: string; key: string }[] = [
   { grade: 'easy', label: 'Leicht', key: '4' },
 ]
 
+/** Characters a phone keyboard buries two taps deep, offered inline instead. */
+const UMLAUTS = ['ä', 'ö', 'ü', 'ß']
+
 /**
- * What the front of the card shows. Switching on mode here is what will let
- * English→German and cloze modes reuse this whole screen unchanged.
+ * What the front of the card shows. Both productive modes prompt with the English
+ * and expect the German back; they differ only in whether the answer is typed.
  */
 function prompt(item: ReviewItem): string {
-  return item.state.mode === 'en-de' ? item.card.en : item.card.de
+  return item.state.mode === 'de-en' ? item.card.de : item.card.en
 }
 
 function answer(item: ReviewItem): string {
-  return item.state.mode === 'en-de' ? item.card.de : item.card.en
+  return item.state.mode === 'de-en' ? item.card.en : item.card.de
 }
 
 const POS_LABELS: Record<string, string> = {
@@ -33,28 +38,67 @@ const POS_LABELS: Record<string, string> = {
 export function Review({ app }: { app: App }) {
   const item = app.queue[0]
   const [revealed, setRevealed] = useState(false)
+  const [entry, setEntry] = useState('')
   const shownAt = useRef(Date.now())
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
-  const total = app.counts.learning + app.counts.review + app.counts.fresh
+  const total = app.counts.learning + app.counts.review + app.counts.fresh + app.counts.aufbau
   const remaining = app.queue.length
   const done = Math.max(0, total - remaining)
+
+  const typing = item?.state.mode === 'typed-de'
 
   // Reset the reveal whenever a different card comes up, so a fast tap on the
   // grade buttons can never reveal and grade the next card in one gesture.
   const key = item?.state.key
   useEffect(() => {
     setRevealed(false)
+    setEntry('')
     shownAt.current = Date.now()
   }, [key])
+
+  // A typing exercise wants the keyboard up; the platform decides whether it opens.
+  useEffect(() => {
+    if (typing && !revealed) inputRef.current?.focus()
+  }, [key, typing, revealed])
 
   const intervals = useMemo(
     () => (item ? app.scheduler.preview(item.state, app.now) : null),
     [item, app.scheduler, app.now],
   )
 
+  /**
+   * Whether the typed answer matched — computed only once revealed, so nothing is
+   * given away while the field is still being filled in.
+   *
+   * There is deliberately no "wrong" state. A missing tick is the whole of the
+   * negative signal, and the grade buttons remain the only thing that decides what
+   * happens to the card.
+   */
+  const tick = useMemo(() => {
+    if (!item || !typing || !revealed) return false
+    return isSpellingCorrect(entry, item.card)
+  }, [item, typing, revealed, entry])
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (!item) return
+
+      /*
+       * The listener is on the window, so without this every keystroke aimed at the
+       * input would also be read as a command: space would reveal the card and 1–4
+       * would grade it mid-word. While the field has focus it owns the keyboard,
+       * and only Enter — meaning "I am done typing" — is borrowed back.
+       */
+      const target = event.target as HTMLElement | null
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          setRevealed(true)
+        }
+        return
+      }
+
       // `event.code` covers layouts and synthetic events where `key` is not ' '.
       if (!revealed && (event.key === ' ' || event.code === 'Space' || event.key === 'Enter')) {
         event.preventDefault()
@@ -109,8 +153,47 @@ export function Review({ app }: { app: App }) {
       <div class="card">
         <div>
           <div class="card-prompt">{prompt(item)}</div>
-          {posLabel ? <div class="card-meta">{posLabel}</div> : null}
+          <div class="card-meta">
+            {modeLabel(item.state.mode)}
+            {posLabel ? ` · ${posLabel}` : ''}
+          </div>
         </div>
+
+        {typing ? (
+          <div class="card-typed">
+            <input
+              ref={inputRef}
+              class="typed-input"
+              type="text"
+              value={entry}
+              readOnly={revealed}
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck={false}
+              placeholder="auf Deutsch tippen"
+              aria-label="Deutsche Antwort"
+              onInput={(event) => setEntry((event.target as HTMLInputElement).value)}
+            />
+            {revealed ? null : (
+              <div class="umlauts">
+                {UMLAUTS.map((character) => (
+                  <button
+                    key={character}
+                    type="button"
+                    class="umlaut"
+                    onClick={() => {
+                      setEntry((current) => current + character)
+                      inputRef.current?.focus()
+                    }}
+                  >
+                    {character}
+                  </button>
+                ))}
+              </div>
+            )}
+            {revealed && tick ? <div class="tick">Richtig!</div> : null}
+          </div>
+        ) : null}
 
         {revealed ? (
           <>

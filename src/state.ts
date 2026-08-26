@@ -9,7 +9,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { mergeProgress } from './core/merge'
-import { buildQueue, dailyCounts, pinActive, queueCounts, type QueueCounts } from './core/queue'
+import { ALL_MODES, isModeUnlocked } from './core/modes'
+import {
+  buildQueue,
+  dailyCounts,
+  pinActive,
+  queueCounts,
+  recentlyReviewed,
+  type QueueCounts,
+} from './core/queue'
 import { createSm2Scheduler, type Scheduler } from './core/scheduler'
 import { parseVocabFile, type Problem } from './core/schema'
 import { withDefaults, type AppSettings } from './core/settings'
@@ -149,7 +157,12 @@ export function useApp() {
       const merged = mergeProgress({
         cards: file.cards,
         stored,
-        modes: settings.activeModes,
+        modes: [...ALL_MODES],
+        // Which modes a card has is derived from its own history rather than read
+        // from settings, so a settings record written before Aufbau existed cannot
+        // pin the collection to recognition alone.
+        gate: (card, mode, stateFor) =>
+          isModeUnlocked(card, mode, stateFor, settings.aufbauThresholdDays),
         scheduler: activeScheduler,
       })
 
@@ -199,6 +212,12 @@ export function useApp() {
     return state.file.decks.find((deck) => deck.id === state.settings.activeDeckId) ?? null
   }, [state.file, state.settings.activeDeckId])
 
+  /**
+   * Words answered recently, so that Breite can hold their other modes back across
+   * queue rebuilds rather than only within one.
+   */
+  const recentCardIds = useMemo(() => recentlyReviewed(state.log, now), [state.log, now])
+
   const queueInput = useMemo(
     () => ({
       items: state.items,
@@ -206,8 +225,9 @@ export function useApp() {
       doneToday,
       now,
       deck: activeDeck,
+      recentCardIds,
     }),
-    [state.items, state.settings, doneToday, now, activeDeck],
+    [state.items, state.settings, doneToday, now, activeDeck, recentCardIds],
   )
 
   /**
@@ -265,14 +285,30 @@ export function useApp() {
     [scheduler],
   )
 
-  const updateSettings = useCallback((patch: Partial<AppSettings>) => {
-    setState((previous) => {
-      const settings = withDefaults({ ...previous.settings, ...patch })
-      const store = storeRef.current
-      if (store) void store.saveSettings(settings)
-      return { ...previous, settings }
-    })
-  }, [])
+  const updateSettings = useCallback(
+    (patch: Partial<AppSettings>) => {
+      /*
+       * The unlock threshold is the one setting that changes which items *exist*
+       * rather than how they are ordered, and generation happens in `load`. Without
+       * re-running it, lowering the threshold would appear to do nothing until the
+       * app was next opened. Reloading is cheap — the vocabulary is served from
+       * cache and progress is read, never rewritten.
+       */
+      const regenerate =
+        patch.aufbauThresholdDays !== undefined &&
+        patch.aufbauThresholdDays !== state.settings.aufbauThresholdDays
+
+      setState((previous) => {
+        const settings = withDefaults({ ...previous.settings, ...patch })
+        const store = storeRef.current
+        if (store) void store.saveSettings(settings)
+        return { ...previous, settings }
+      })
+
+      if (regenerate) void load()
+    },
+    [state.settings.aufbauThresholdDays, load],
+  )
 
   /** Serialises all progress to a file the user keeps. The only real backup. */
   const exportBackup = useCallback(async () => {

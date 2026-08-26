@@ -6,22 +6,89 @@
     {
       "id": "kraehen",
       "name": "Das Lied der Krähen",
-      "filter": { "sources": ["Das Lied der Krähen"] }
+      "filter": {
+        "sources": [
+          "Das Lied der Krähen"
+        ]
+      }
     },
     {
       "id": "kraehen-kap-1",
       "name": "Krähen · Kapitel 1",
-      "filter": { "sources": ["Das Lied der Krähen"], "chapters": ["1"] }
+      "filter": {
+        "sources": [
+          "Das Lied der Krähen"
+        ],
+        "chapters": [
+          "1"
+        ]
+      }
+    },
+    {
+      "id": "kraehen-kap-2",
+      "name": "Krähen · Kapitel 2",
+      "filter": {
+        "sources": [
+          "Das Lied der Krähen"
+        ],
+        "chapters": [
+          "2"
+        ]
+      }
+    },
+    {
+      "id": "kraehen-kap-3",
+      "name": "Krähen · Kapitel 3",
+      "filter": {
+        "sources": [
+          "Das Lied der Krähen"
+        ],
+        "chapters": [
+          "3"
+        ]
+      }
+    },
+    {
+      "id": "kraehen-kap-4",
+      "name": "Krähen · Kapitel 4",
+      "filter": {
+        "sources": [
+          "Das Lied der Krähen"
+        ],
+        "chapters": [
+          "4"
+        ]
+      }
+    },
+    {
+      "id": "kraehen-kap-5",
+      "name": "Krähen · Kapitel 5",
+      "filter": {
+        "sources": [
+          "Das Lied der Krähen"
+        ],
+        "chapters": [
+          "5"
+        ]
+      }
     },
     {
       "id": "lesson-vanessa",
       "name": "Lesson mit Vanessa",
-      "filter": { "sources": ["Lesson mit Vanessa"] }
+      "filter": {
+        "sources": [
+          "Lesson mit Vanessa"
+        ]
+      }
     },
     {
       "id": "verben",
       "name": "Nur Verben",
-      "filter": { "tags": ["verb"] }
+      "filter": {
+        "tags": [
+          "verb"
+        ]
+      }
     },
     {
       "id": "redewendungen",

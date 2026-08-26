@@ -11,15 +11,54 @@
  * - **New cards** are optional work. Capped separately, and interleaved through the
  *   reviews rather than front-loaded, so a session does not open with a wall of
  *   unfamiliar words.
+ * - **Aufbau cards** — productive modes newly unlocked on words already known — are
+ *   new cards too, but budgeted apart from fresh vocabulary. Sharing one allowance
+ *   would mean a wave of level-ups quietly starving a new chapter, or the reverse;
+ *   two budgets let either be throttled without touching the other.
  */
 
-import { startOfStudyDay } from './scheduler'
-import type { AppSettings } from './settings'
+import { isAufbauMode } from './modes'
+import { parseItemKey, startOfStudyDay } from './scheduler'
+import type { AppSettings, SessionMode } from './settings'
 import type { Card, Deck, DeckFilter, ReviewItem, ReviewLogEntry } from './types'
 
+/**
+ * How long a word counts as "just seen" for the purposes of Breite.
+ *
+ * The problem being solved is priming, which is short-lived: answering a word ten
+ * minutes ago makes the next asking a test of working memory, whereas answering it
+ * this morning does not. An hour is comfortably longer than a session and far
+ * shorter than a day, which is the span the user explicitly wanted left alone.
+ */
+const SIBLING_WINDOW_MS = 60 * 60 * 1000
+
+/**
+ * Cards answered recently enough that asking them another way would test recall of
+ * the last few minutes rather than of the word.
+ *
+ * Derived from the review log rather than held in session state, so it costs no
+ * storage, survives a reload mid-session, and needs no cleanup.
+ */
+export function recentlyReviewed(
+  log: ReviewLogEntry[],
+  now: Date,
+  windowMs: number = SIBLING_WINDOW_MS,
+): Set<string> {
+  const cutoff = now.getTime() - windowMs
+  const ids = new Set<string>()
+  for (const entry of log) {
+    if (Date.parse(entry.at) < cutoff) continue
+    const parsed = parseItemKey(entry.key)
+    if (parsed !== null) ids.add(parsed.cardId)
+  }
+  return ids
+}
+
 export interface DailyCounts {
-  /** New cards seen for the first time today. */
+  /** Previously unseen vocabulary introduced today. */
   introduced: number
+  /** Newly unlocked Aufbau items introduced today, budgeted separately. */
+  aufbauIntroduced: number
   /** Graduated cards reviewed today. Learning steps are excluded. */
   reviewed: number
 }
@@ -27,8 +66,10 @@ export interface DailyCounts {
 export interface QueueCounts {
   learning: number
   review: number
-  /** New cards available today, after the daily cap. */
+  /** New vocabulary available today, after the daily cap. */
   fresh: number
+  /** Newly unlocked Aufbau items available today, after their own cap. */
+  aufbau: number
   /** Cards in the deck that are neither due nor available — for context, not work. */
   waiting: number
 }
@@ -40,6 +81,11 @@ export interface QueueInput {
   now?: Date
   /** Restrict to a deck. Null or omitted means the whole collection. */
   deck?: Deck | null
+  /**
+   * Cards answered in the recent past, whose other modes Breite should hold back.
+   * Omitted means the session has no memory, which is only right in tests.
+   */
+  recentCardIds?: Set<string>
   rng?: () => number
 }
 
@@ -77,13 +123,20 @@ export function dailyCounts(
 ): DailyCounts {
   const dayStart = startOfStudyDay(now, dayStartHour).getTime()
   let introduced = 0
+  let aufbauIntroduced = 0
   let reviewed = 0
   for (const entry of log) {
     if (Date.parse(entry.at) < dayStart) continue
-    if (entry.phaseBefore === 'new') introduced++
-    else if (entry.phaseBefore === 'review') reviewed++
+    if (entry.phaseBefore === 'new') {
+      // The mode is already encoded in the log key, so the two populations can be
+      // told apart retroactively — no migration, and history written before Aufbau
+      // existed classifies correctly as ordinary vocabulary.
+      const parsed = parseItemKey(entry.key)
+      if (parsed !== null && isAufbauMode(parsed.mode)) aufbauIntroduced++
+      else introduced++
+    } else if (entry.phaseBefore === 'review') reviewed++
   }
-  return { introduced, reviewed }
+  return { introduced, aufbauIntroduced, reviewed }
 }
 
 /** Fisher–Yates, with injected randomness so tests can pin the order. */
@@ -123,6 +176,7 @@ interface Split {
   learning: ReviewItem[]
   review: ReviewItem[]
   fresh: ReviewItem[]
+  aufbau: ReviewItem[]
   waiting: number
 }
 
@@ -134,13 +188,15 @@ function split(input: QueueInput): Split {
   const learning: ReviewItem[] = []
   const review: ReviewItem[] = []
   const fresh: ReviewItem[] = []
+  const aufbau: ReviewItem[] = []
   let waiting = 0
 
   for (const item of input.items) {
     if (filter && !matchesFilter(item.card, filter)) continue
 
     if (item.state.phase === 'new') {
-      fresh.push(item)
+      if (isAufbauMode(item.state.mode)) aufbau.push(item)
+      else fresh.push(item)
       continue
     }
     if (Date.parse(item.state.due) > at) {
@@ -155,17 +211,63 @@ function split(input: QueueInput): Split {
   learning.sort((a, b) => Date.parse(a.state.due) - Date.parse(b.state.due))
 
   // New cards follow file order, so a chapter is introduced in the order it was read.
-  return { learning, review, fresh, waiting }
+  return { learning, review, fresh, aufbau, waiting }
+}
+
+/**
+ * Sends a word's later modes to the back of the session.
+ *
+ * Once a card has three modes they can all fall due on the same day, and answering
+ * Deutsch → Englisch immediately primes the two productive directions — the second
+ * and third askings test recall of the last thirty seconds rather than of the word.
+ * In `breadth` the repeats are moved to the end of the queue, so the session covers
+ * distinct words first and only doubles back if there is time.
+ *
+ * Deferred rather than hidden: nothing is removed from the session and nothing is
+ * persisted, so the choice costs no progress and can be changed mid-session. Cards
+ * already on the learning ladder are treated as seen but are never themselves moved,
+ * since they are minutes-scale and time-critical.
+ *
+ * `recent` is what makes this hold up across a session. The queue is rebuilt after
+ * every answer, so without it a sibling that was being deferred becomes the first
+ * occurrence of its word the moment its partner is graded away — and jumps straight
+ * to the front, which is precisely the back-to-back asking Breite exists to prevent.
+ */
+function spaceSiblings(
+  learning: ReviewItem[],
+  tail: ReviewItem[],
+  mode: SessionMode,
+  recent: Set<string>,
+): ReviewItem[] {
+  if (mode === 'depth') return tail
+
+  const seen = new Set([...recent, ...learning.map((item) => item.card.id)])
+  const kept: ReviewItem[] = []
+  const deferred: ReviewItem[] = []
+
+  for (const item of tail) {
+    if (seen.has(item.card.id)) deferred.push(item)
+    else {
+      seen.add(item.card.id)
+      kept.push(item)
+    }
+  }
+
+  return [...kept, ...deferred]
 }
 
 /** How much work the deck holds right now, after daily caps. */
 export function queueCounts(input: QueueInput): QueueCounts {
-  const { learning, review, fresh, waiting } = split(input)
+  const { learning, review, fresh, aufbau, waiting } = split(input)
   const { settings, doneToday } = input
   return {
     learning: learning.length,
     review: Math.min(review.length, Math.max(0, settings.maxReviewsPerDay - doneToday.reviewed)),
     fresh: Math.min(fresh.length, Math.max(0, settings.newPerDay - doneToday.introduced)),
+    aufbau: Math.min(
+      aufbau.length,
+      Math.max(0, settings.aufbauPerDay - doneToday.aufbauIntroduced),
+    ),
     waiting,
   }
 }
@@ -178,17 +280,25 @@ export function queueCounts(input: QueueInput): QueueCounts {
  * which a static queue cannot express.
  */
 export function buildQueue(input: QueueInput): ReviewItem[] {
-  const { learning, review, fresh } = split(input)
+  const { learning, review, fresh, aufbau } = split(input)
   const { settings, doneToday } = input
   const rng = input.rng ?? Math.random
 
   const reviewBudget = Math.max(0, settings.maxReviewsPerDay - doneToday.reviewed)
   const newBudget = Math.max(0, settings.newPerDay - doneToday.introduced)
+  const aufbauBudget = Math.max(0, settings.aufbauPerDay - doneToday.aufbauIntroduced)
 
   const cappedReviews = shuffle(review, rng).slice(0, reviewBudget)
   const cappedFresh = fresh.slice(0, newBudget)
+  const cappedAufbau = aufbau.slice(0, aufbauBudget)
 
-  return [...learning, ...interleave(cappedReviews, cappedFresh)]
+  // Both introductions interleave through the reviews together: they are the same
+  // kind of work to a session, however differently they are budgeted.
+  const tail = interleave(cappedReviews, [...cappedFresh, ...cappedAufbau])
+
+  const recent = input.recentCardIds ?? new Set<string>()
+
+  return [...learning, ...spaceSiblings(learning, tail, settings.sessionMode, recent)]
 }
 
 /**
