@@ -6,101 +6,89 @@
     {
       "id": "kraehen",
       "name": "Das Lied der Krähen",
-      "filter": {
-        "sources": [
-          "Das Lied der Krähen"
-        ]
-      }
+      "filter": { "sources": ["Das Lied der Krähen"] }
     },
     {
       "id": "kraehen-kap-1",
       "name": "Krähen · Kapitel 1",
-      "filter": {
-        "sources": [
-          "Das Lied der Krähen"
-        ],
-        "chapters": [
-          "1"
-        ]
-      }
+      "filter": { "sources": ["Das Lied der Krähen"], "chapters": ["1"] }
     },
     {
       "id": "kraehen-kap-2",
       "name": "Krähen · Kapitel 2",
-      "filter": {
-        "sources": [
-          "Das Lied der Krähen"
-        ],
-        "chapters": [
-          "2"
-        ]
-      }
+      "filter": { "sources": ["Das Lied der Krähen"], "chapters": ["2"] }
     },
     {
       "id": "kraehen-kap-3",
       "name": "Krähen · Kapitel 3",
-      "filter": {
-        "sources": [
-          "Das Lied der Krähen"
-        ],
-        "chapters": [
-          "3"
-        ]
-      }
+      "filter": { "sources": ["Das Lied der Krähen"], "chapters": ["3"] }
     },
     {
       "id": "kraehen-kap-4",
       "name": "Krähen · Kapitel 4",
-      "filter": {
-        "sources": [
-          "Das Lied der Krähen"
-        ],
-        "chapters": [
-          "4"
-        ]
-      }
+      "filter": { "sources": ["Das Lied der Krähen"], "chapters": ["4"] }
     },
     {
       "id": "kraehen-kap-5",
       "name": "Krähen · Kapitel 5",
-      "filter": {
-        "sources": [
-          "Das Lied der Krähen"
-        ],
-        "chapters": [
-          "5"
-        ]
-      }
+      "filter": { "sources": ["Das Lied der Krähen"], "chapters": ["5"] }
     },
     {
       "id": "lesson-vanessa",
       "name": "Lesson mit Vanessa",
-      "filter": {
-        "sources": [
-          "Lesson mit Vanessa"
-        ]
-      }
+      "filter": { "sources": ["Lesson mit Vanessa"] }
     },
     {
       "id": "verben",
       "name": "Nur Verben",
-      "filter": {
-        "tags": [
-          "verb"
-        ]
-      }
+      "filter": { "tags": ["verb"] }
     },
     {
       "id": "redewendungen",
       "name": "Redewendungen · C1",
       "filter": {
         "ids": [
-          "die-fassung",
-          "zu-schaetzen-wissen",
+          "den-schwanz-einziehen",
+          "im-auge-behalten",
+          "sein-unwesen-treiben",
           "zu-allem-ueberfluss",
-          "zum-opfer-fallen",
+          "eine-tracht-pruegel",
+          "an-den-hacken-kleben",
           "auf-die-probe-stellen",
+          "beim-schopf-packen",
+          "in-der-tat",
+          "druck-ausueben",
+          "ein-geschaeft-abschliessen",
+          "ueber-die-massen",
+          "aus-dem-gleichgewicht-bringen",
+          "zu-schaetzen-wissen",
           "aus-dem-bauch-heraus",
+          "schulden-begleichen",
+          "sein-blaues-wunder-erleben",
+          "zum-opfer-fallen",
+          "zeit-schinden",
+          "in-und-auswendig",
+          "jdm-etwas-anhaengen",
+          "in-einen-topf-werfen",
+          "davon-ausgehen",
+          "behilflich-sein",
+          "die-stirn-runzeln",
+          "zur-rechten-zeit",
+          "fuer-sich-behalten",
+          "nach-jds-pfeife-tanzen",
+          "ganz-zu-schweigen-davon",
+          "keine-muehen-scheuen",
+          "mein-beileid",
+          "geneigt-sein",
+          "dem-blick-standhalten",
+          "in-erfahrung-bringen",
+          "nicht-im-geringsten",
+          "eine-gefahr-darstellen",
+          "bis-ins-mark",
+          "so-gut-wie",
+          "von-bedeutung-sein",
+          "ein-loblied-singen",
+          "die-fassung",
           "abgekartet"
         ]
       }
