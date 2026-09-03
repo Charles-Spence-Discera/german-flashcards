@@ -3,6 +3,30 @@ import type { ImportMode } from '../core/storage'
 import { parseRepoRef, type SyncHealth } from '../core/sync'
 import type { App } from '../state'
 
+/**
+ * Holds what is being typed until the field is left.
+ *
+ * Every input here is controlled by stored state, and the app re-renders on a
+ * five-second clock so review counts stay current. A field bound straight to that
+ * state therefore has anything half-typed in it overwritten on the next tick — you
+ * type a repository name, pause, and the box empties itself. Keeping keystrokes in a
+ * local draft and committing on blur leaves the store as the source of truth without
+ * the clock reaching in and clearing the box mid-word.
+ *
+ * `commit` returns false to reject a value, which keeps the draft on screen so the
+ * text can be corrected rather than silently discarded.
+ */
+function useDraft(stored: string, commit: (raw: string) => boolean) {
+  const [draft, setDraft] = useState<string | null>(null)
+  return {
+    value: draft ?? stored,
+    onInput: (event: Event) => setDraft((event.target as HTMLInputElement).value),
+    onBlur: (event: Event) => {
+      if (commit((event.target as HTMLInputElement).value)) setDraft(null)
+    },
+  }
+}
+
 const HEALTH_LABEL: Record<SyncHealth, string> = {
   off: 'aus',
   never: 'noch nie gelaufen',
@@ -33,26 +57,33 @@ function formatWhen(iso: string | null): string {
  */
 function SyncPanel({ app }: { app: App }) {
   const config = app.sync
-  const [repoInput, setRepoInput] = useState(
-    config.owner === '' ? '' : `${config.owner}/${config.repo}`,
-  )
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
-  function commitRepo(raw: string) {
-    setRepoInput(raw)
+  const repoField = useDraft(config.owner === '' ? '' : `${config.owner}/${config.repo}`, (raw) => {
     if (raw.trim() === '') {
       app.updateSync({ owner: '', repo: '' })
-      return
+      return true
     }
     const parsed = parseRepoRef(raw)
     if (parsed === null) {
       setMessage('Repository muss die Form „benutzername/repo“ haben.')
-      return
+      return false
     }
     setMessage(null)
     app.updateSync(parsed)
-  }
+    return true
+  })
+
+  const pathField = useDraft(config.path, (raw) => {
+    app.updateSync({ path: raw })
+    return true
+  })
+
+  const tokenField = useDraft(config.token, (raw) => {
+    app.updateSync({ token: raw.trim() })
+    return true
+  })
 
   async function runTest() {
     setBusy(true)
@@ -124,8 +155,7 @@ function SyncPanel({ app }: { app: App }) {
           autocapitalize="none"
           spellcheck={false}
           placeholder="benutzername/german-flashcards-backup"
-          value={repoInput}
-          onChange={(event) => commitRepo((event.target as HTMLInputElement).value)}
+          {...repoField}
         />
         <span class="field-hint">
           Ein eigenes, privates Repository — nicht das mit den Vokabeln, sonst löst jede Sicherung
@@ -141,8 +171,7 @@ function SyncPanel({ app }: { app: App }) {
           autocomplete="off"
           autocapitalize="none"
           spellcheck={false}
-          value={config.path}
-          onChange={(event) => app.updateSync({ path: (event.target as HTMLInputElement).value })}
+          {...pathField}
         />
       </div>
 
@@ -154,8 +183,7 @@ function SyncPanel({ app }: { app: App }) {
           autocomplete="off"
           spellcheck={false}
           placeholder="github_pat_…"
-          value={config.token}
-          onChange={(event) => app.updateSync({ token: (event.target as HTMLInputElement).value })}
+          {...tokenField}
         />
         <span class="field-hint">
           Fine-grained Token, nur für dieses eine Repository, Berechtigung „Contents: read and
@@ -231,10 +259,24 @@ export function Settings({ app }: { app: App }) {
     }
   }
 
-  function setNumber(key: 'newPerDay' | 'maxReviewsPerDay', raw: string) {
+  /**
+   * Rejects anything unparseable so the draft survives: clearing the box to retype
+   * passes through an empty string, and snapping the old number back at that moment
+   * would make the field impossible to edit.
+   */
+  function commitNumber(key: 'newPerDay' | 'maxReviewsPerDay', raw: string): boolean {
     const value = Number.parseInt(raw, 10)
-    if (Number.isFinite(value) && value >= 0) app.updateSettings({ [key]: value })
+    if (!Number.isFinite(value) || value < 0) return false
+    app.updateSettings({ [key]: value })
+    return true
   }
+
+  const newPerDayField = useDraft(String(app.settings.newPerDay), (raw) =>
+    commitNumber('newPerDay', raw),
+  )
+  const maxReviewsField = useDraft(String(app.settings.maxReviewsPerDay), (raw) =>
+    commitNumber('maxReviewsPerDay', raw),
+  )
 
   return (
     <>
@@ -242,14 +284,7 @@ export function Settings({ app }: { app: App }) {
         <h2>Tageslimits</h2>
         <div class="field">
           <label for="new-per-day">Neue Karten pro Tag</label>
-          <input
-            id="new-per-day"
-            type="number"
-            min={0}
-            max={999}
-            value={app.settings.newPerDay}
-            onChange={(event) => setNumber('newPerDay', (event.target as HTMLInputElement).value)}
-          />
+          <input id="new-per-day" type="number" min={0} max={999} {...newPerDayField} />
           <span class="field-hint">
             Wie viele unbekannte Wörter höchstens neu dazukommen. Jedes neue Wort erzeugt für Monate
             Wiederholungen — 10 bis 20 ist nachhaltig.
@@ -257,16 +292,7 @@ export function Settings({ app }: { app: App }) {
         </div>
         <div class="field">
           <label for="max-reviews">Wiederholungen pro Tag</label>
-          <input
-            id="max-reviews"
-            type="number"
-            min={0}
-            max={9999}
-            value={app.settings.maxReviewsPerDay}
-            onChange={(event) =>
-              setNumber('maxReviewsPerDay', (event.target as HTMLInputElement).value)
-            }
-          />
+          <input id="max-reviews" type="number" min={0} max={9999} {...maxReviewsField} />
           <span class="field-hint">
             Obergrenze für fällige Karten. Lernschritte zählen nicht mit und werden nie begrenzt.
           </span>
