@@ -86,6 +86,13 @@ export interface QueueInput {
    * Omitted means the session has no memory, which is only right in tests.
    */
   recentCardIds?: Set<string>
+  /**
+   * Makes the review draw reproducible across the rebuilds of one session. Pass
+   * the study day's start, so the pile is drawn once a day rather than once a
+   * tick. Omitted means `Math.random`, which is only safe where nothing is left
+   * on screen between rebuilds — tests, and one-shot counts.
+   */
+  seed?: number
   rng?: () => number
 }
 
@@ -137,6 +144,31 @@ export function dailyCounts(
     } else if (entry.phaseBefore === 'review') reviewed++
   }
   return { introduced, aufbauIntroduced, reviewed }
+}
+
+/**
+ * A small deterministic generator, so a rebuild can reshuffle reproducibly.
+ *
+ * The review pile is shuffled and *then* cut to the daily cap, which means the
+ * shuffle decides not only the order of a session but its membership: with more
+ * cards due than the cap allows, a different draw keeps a different subset. The
+ * queue is rebuilt on every clock tick, so drawing from `Math.random` each time
+ * silently re-picks that subset every few seconds, and a card can vanish from
+ * under the person reading it — `pinActive` cannot hold a card that is no longer
+ * in the queue at all.
+ *
+ * Seeding from the study day keeps the draw identical across the rebuilds of a
+ * session while still varying from one day to the next.
+ */
+function seededRng(seed: number): () => number {
+  let state = seed >>> 0
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0
+    let t = state
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
 }
 
 /** Fisher–Yates, with injected randomness so tests can pin the order. */
@@ -282,7 +314,7 @@ export function queueCounts(input: QueueInput): QueueCounts {
 export function buildQueue(input: QueueInput): ReviewItem[] {
   const { learning, review, fresh, aufbau } = split(input)
   const { settings, doneToday } = input
-  const rng = input.rng ?? Math.random
+  const rng = input.rng ?? (input.seed === undefined ? Math.random : seededRng(input.seed))
 
   const reviewBudget = Math.max(0, settings.maxReviewsPerDay - doneToday.reviewed)
   const newBudget = Math.max(0, settings.newPerDay - doneToday.introduced)

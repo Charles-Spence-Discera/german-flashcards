@@ -18,7 +18,7 @@ import {
   recentlyReviewed,
   type QueueCounts,
 } from './core/queue'
-import { createSm2Scheduler, type Scheduler } from './core/scheduler'
+import { createSm2Scheduler, startOfStudyDay, type Scheduler } from './core/scheduler'
 import { parseVocabFile, type Problem } from './core/schema'
 import { withDefaults, type AppSettings } from './core/settings'
 import { backupFilename, openStore, type ImportMode, type ImportSummary, type Store } from './core/storage'
@@ -218,6 +218,20 @@ export function useApp() {
    */
   const recentCardIds = useMemo(() => recentlyReviewed(state.log, now), [state.log, now])
 
+  /**
+   * Fixes the review draw for the whole study day.
+   *
+   * More cards can be due than `maxReviewsPerDay` allows, and the pile is shuffled
+   * before it is cut, so the draw decides which cards a session contains and not
+   * merely their order. Re-drawing on every tick re-picks that membership every few
+   * seconds, which takes the card being read out of the queue entirely. Keyed to the
+   * study day so the session is stable throughout it and varies the next morning.
+   */
+  const studyDaySeed = useMemo(
+    () => startOfStudyDay(now, state.settings.scheduler.dayStartHour).getTime(),
+    [now, state.settings.scheduler.dayStartHour],
+  )
+
   const queueInput = useMemo(
     () => ({
       items: state.items,
@@ -226,6 +240,7 @@ export function useApp() {
       now,
       deck: activeDeck,
       recentCardIds,
+      seed: studyDaySeed,
     }),
     [state.items, state.settings, doneToday, now, activeDeck, recentCardIds],
   )
